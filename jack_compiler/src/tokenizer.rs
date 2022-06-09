@@ -101,7 +101,7 @@ impl Tokenizer {
                         },
                         // If a number, it is an integerConstant. Read until the end of the number.
                         b'0' => {
-                            tokens.push(Token::IntConst(ch[0] as i16));
+                            tokens.push(Token::IntConst((ch[0] - b'0') as i16));
                         },
                         b'1'..=b'9' => {
                             let mut digits = vec![ch[0]];
@@ -119,21 +119,25 @@ impl Tokenizer {
                             }
                             reader.consume(digits.len()-1);
 
-                            let int_const: i16 = digits.iter().rev().fold(0, |acc, d| 10*acc + *d as i16);
+                            let int_const: i16 = digits
+                                .into_iter()
+                                .rev()
+                                .map(|d| d - b'0')
+                                .fold(0, |acc, d| 10*acc + d as i16);
                             tokens.push(Token::IntConst(int_const));
                         },
                         // If a doublequote, it is beginning of a stringConstant. Read until the next doublequote appears.
                         b'"' => {
                             let mut string_const = vec![];
                             reader.read_until(b'"', &mut string_const).expect("reached unexpected EOF while parsing StringConst");
-                            let string_const = string_const[..string_const.len()-2].to_vec();
+                            let string_const = string_const[..string_const.len()-1].to_vec();
                             tokens.push(Token::StringConst(String::from_utf8(string_const).unwrap()));
                         },
                         // If an alphabet or underscore, it is a keyword or identifier.
                         b'a'..=b'z' | b'A'..=b'Z' | b'_' => {
                             let mut chars = vec![ch[0]];
                             if let Ok(buf) = reader.fill_buf() {
-                                for c in buf.into_iter() {
+                                for c in buf.iter() {
                                     match c {
                                         b'a'..=b'z' | b'A'..=b'Z' | b'_' => {
                                             chars.push(*c);
