@@ -73,19 +73,20 @@ impl Tokenizer {
                                     if let Ok(buf) = reader.fill_buf() { // TODO: I need more efficient way to look ahead a buffer...
                                         match buf[0] {
                                             // If / or *, it is followed by a comment, so skip it.
-                                            b'/' => {
+                                            b'/' => { // one line comment
+                                                reader.consume(1);
                                                 let mut comment = vec![];
                                                 reader.read_until(b'\n', &mut comment).unwrap();
                                             },
                                             b'*' => {
-                                                // skip until next "*/".
+                                                reader.consume(1);
                                                 let mut comment = vec![];
                                                 while let Ok(_) = reader.read_until(b'/', &mut comment) {
                                                     if comment.len() >= 2 && comment[comment.len()-2] == b'*' {
                                                         break;
                                                     }
                                                 }
-                                            }
+                                            },
                                             _ => {
                                                 // If not a comment, the slash is a symbol token.
                                                 tokens.push(Token::Symbol(char::from_u32(ch[0] as u32).unwrap()));
@@ -151,8 +152,8 @@ impl Tokenizer {
                             reader.consume(chars.len()-1);
 
                             let word: String = chars
-                                .iter()
-                                .map(|c| char::from_u32(*c as u32).unwrap().to_string())
+                                .into_iter()
+                                .map(|c| char::from_u32(c as u32).unwrap().to_string())
                                 .collect::<Vec<String>>()
                                 .join("");
                             if keyword_set.contains(word.as_str()) {
@@ -161,13 +162,13 @@ impl Tokenizer {
                                 tokens.push(Token::Identifier(word));
                             }
                         },
-                        _ => { panic!("invalid byte appeared while tokenizing"); }
+                        _ => { panic!("invalid byte appeared while tokenizing: {:0x}", ch[0]); }
                     }
                 },
                 Err(e) => {
                     match e.kind() {
                         ErrorKind::UnexpectedEof => { break 'tokenize; }, // reached EOF
-                        _ => { panic!("unexpected error occurred while tokenizing"); }
+                        _ => { panic!("unexpected error occurred while tokenizing: {}", e); }
                     }
                 }
             }
@@ -191,9 +192,34 @@ impl Tokenizer {
         self.current_token.clone()
     }
 
-    pub fn keyword(&self) -> Option<String> {
+    pub fn keyword(&self) -> Option<Keyword> {
         match &self.current_token {
-            Token::Keyword(kw) => Some(kw.to_string()),
+            Token::Keyword(kw) => {
+                match kw.as_str() {
+                    "class"         => Some(Keyword::Class),
+                    "constructor"   => Some(Keyword::Constructor),
+                    "function"      => Some(Keyword::Function),
+                    "method"        => Some(Keyword::Method),
+                    "field"         => Some(Keyword::Field),
+                    "static"        => Some(Keyword::Static),
+                    "var"           => Some(Keyword::Var),
+                    "int"           => Some(Keyword::Int),
+                    "char"          => Some(Keyword::Char),
+                    "boolean"       => Some(Keyword::Boolean),
+                    "void"          => Some(Keyword::Void),
+                    "true"          => Some(Keyword::True),
+                    "false"         => Some(Keyword::False),
+                    "null"          => Some(Keyword::Null),
+                    "this"          => Some(Keyword::This),
+                    "let"           => Some(Keyword::Let),
+                    "do"            => Some(Keyword::Do),
+                    "if"            => Some(Keyword::If),
+                    "else"          => Some(Keyword::Else),
+                    "while"         => Some(Keyword::While),
+                    "return"        => Some(Keyword::Return),
+                    _               => panic!("invalid keyword detected: {}", kw)
+                }
+            },
             _ => None
         }
     }
