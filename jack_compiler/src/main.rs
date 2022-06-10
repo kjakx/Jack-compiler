@@ -31,8 +31,9 @@ mod tests {
         use std::io::{BufWriter, Write};
         use std::process::Command;
 
-        let jack_src_path = Path::new("/workspace/Jack-compiler/jack_compiler/jack");
+        // pair list of full path of *.jack and *T.xml files
         let mut filename_pairs_in_out = vec![]; 
+        let jack_src_path = Path::new("/workspace/Jack-compiler/jack_compiler/jack");
         for dir in jack_src_path.read_dir().expect("read_dir call failed") {
             if let Ok(dir) = dir {
                 for f in dir.path().read_dir().expect("read_dir call failed") {
@@ -47,10 +48,12 @@ mod tests {
             }
         }
 
+        // tokenize *.jack, export *T.xml, and compare with *T.xml.org
         for (fin, fout) in filename_pairs_in_out.iter() {
             let input_file = File::open(fin).expect("cannot open input file");
-            let output_file = File::create(fout).expect("cannot open output file");
             let mut t = Tokenizer::new(input_file);
+
+            let output_file = File::create(fout).expect("cannot open output file");
             let mut w = BufWriter::<File>::new(output_file);
 
             // export xml
