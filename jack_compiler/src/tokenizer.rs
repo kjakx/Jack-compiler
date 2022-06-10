@@ -47,17 +47,17 @@ impl Tokenizer {
     pub fn new(f: File) -> Self {
         let symbol_set = HashSet::from([
             '{', '}', '(', ')', '[', ']',
-            '.', ',', ';',
-            '+', '-', '*', '/',
-            '&', '|', '<', '>', '=', '~'
+            '+', '-', '*', '/', '&', '|', '~',
+            '<', '>', '=', '.', ',', ';'
         ]);
         let keyword_set = HashSet::from([
             "class", "constructor", "function", "method", "field", "static",
             "var", "int", "char", "boolean", "void", "true", "false", "null",
             "this", "let", "do", "if", "else", "while", "return"
         ]);
-        let mut reader = BufReader::new(f);
+
         let mut tokens = vec![];
+        let mut reader = BufReader::new(f);
         'tokenize: loop {
             let mut ch = [0; 1];
             match reader.read_exact(&mut ch) {
@@ -122,16 +122,15 @@ impl Tokenizer {
 
                             let int_const: i16 = digits
                                 .into_iter()
-                                .rev()
-                                .map(|d| d - b'0')
-                                .fold(0, |acc, d| 10*acc + d as i16);
+                                .map(|d| (d - b'0') as i16)
+                                .fold(0, |acc, d| 10*acc + d);
                             tokens.push(Token::IntConst(int_const));
                         },
                         // If a doublequote, it is beginning of a stringConstant. Read until the next doublequote appears.
                         b'"' => {
                             let mut string_const = vec![];
                             reader.read_until(b'"', &mut string_const).expect("reached unexpected EOF while parsing StringConst");
-                            let string_const = string_const[..string_const.len()-1].to_vec();
+                            string_const.pop().unwrap(); // pop '"'
                             tokens.push(Token::StringConst(String::from_utf8(string_const).unwrap()));
                         },
                         // If an alphabet or underscore, it is a keyword or identifier.
@@ -173,6 +172,8 @@ impl Tokenizer {
                 }
             }
         }
+
+        let tokens = tokens.into_iter().rev().collect();
 
         Tokenizer {
             tokens: tokens,
