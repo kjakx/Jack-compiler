@@ -9,18 +9,20 @@ pub struct Engine {
 
 impl Engine {
     pub fn new(t: Tokenizer, f: File) -> Self {
-        if t.token_type() == Token::Empty {
-            t.advance();
-        }
         Engine {
             tokenizer: t,
             writer: BufWriter::<File>::new(f),
         }
     }
     
+    pub fn compile(&mut self) {
+        self.compile_class();
+    }
+
     pub fn compile_class(&mut self) {
         writeln!(self.writer, "<class>").unwrap();
         // "class"
+        self.tokenizer.advance();
         match self.tokenizer.token_type() {
             Token::Keyword(class) => {
                 writeln!(self.writer, "<keyword> {} </keyword>", class_name).unwrap();
@@ -30,15 +32,7 @@ impl Engine {
             }
         }
         // className
-        self.tokenizer.advance();
-        match self.tokenizer.token_type() {
-            Token::Identifier(class_name) => {
-                writeln!(self.writer, "<identifier> {} </identifier>", class_name).unwrap();
-            },
-            t => {
-                panic!("className expected, found {}", t);
-            }
-        }
+        self.compile_identifier();
         // '{'
         self.tokenizer.advance();
         match self.tokenizer.token_type() {
@@ -53,7 +47,6 @@ impl Engine {
         'classVarDec: loop {
             match self.tokenizer.peek_next_token() {
                 &Token::Keyword(&attribute @ "static" | "field") => {
-                    self.tokenizer.advance();
                     self.compile_class_var_dec();
                 },
                 _ => {
@@ -65,7 +58,6 @@ impl Engine {
         'subroutineDec: loop {
             match self.tokenizer.peek_next_token() {
                 &Token::Keyword(&attribute @ "constructor" | "function" | "method") => {
-                    self.tokenizer.advance();
                     self.compile_subroutine();
                 },
                 _ => {
@@ -99,30 +91,11 @@ impl Engine {
             }
         }
         // type
-        self.tokenizer.advance();
-        match self.tokenizer.token_type() {
-            Token::Keyword(&type_name @ "int" | "char" | "boolean") => {
-                writeln!(self.writer, "<keyword> {} </keyword>", type_name).unwrap();
-            },
-            Token::Identifier(class_name) => {
-                writeln!(self.writer, "<identifier> {} </identifier>", class_name).unwrap();
-            },
-            t => {
-                panic!("type expected, found {}", t);
-            }
-        }
+        self.compile_type();
         // varName (',' varName)*
         'varName: loop {
             // varName
-            self.tokenizer.advance();
-            match self.tokenizer.token_type() {
-                Token::Identifier(var_name) => {
-                    writeln!(self.writer, "<identifier> {} </identifier>", var_name).unwrap();
-                },
-                t => {
-                    panic!("varName expected, found {}", t);
-                }
-            }
+            self.compile_identifier();
             // ','
             match self.tokenizer.peek_next_token() {
                 &Token::Symbol(comma @ ',') => {
@@ -146,7 +119,7 @@ impl Engine {
         writeln!(self.writer, "</classVarDec>").unwrap();
     }
     
-    pub fn compile_subroutine(&mut self) {
+    pub fn compile_subroutine_dec(&mut self) {
         writeln!(self.writer, "<subroutineDec>").unwrap();
         // 'constructor' | 'function' | 'method'
         self.tokenizer.advance();
@@ -175,15 +148,7 @@ impl Engine {
             }
         }
         // subroutineName
-        self.tokenizer.advance();
-        match self.tokenizer.token_type() {
-            Token::Identifier(subroutine_name) => {
-                writeln!(self.writer, "<identifier> {} </identifier>", subroutine_name).unwrap();
-            },
-            t => {
-                panic!("subroutineName expected, found {}", t);
-            }
-        }
+        self.compile_identifier();
         // '('
         self.tokenizer.advance();
         match self.tokenizer.token_type() {
@@ -207,6 +172,11 @@ impl Engine {
             }
         }
         // subroutineBody
+        self.compile_subroutine_body();
+        writeln!(self.writer, "</subroutineDec>").unwrap();
+    }
+
+    pub fn compile_subroutine_body(&mut self) {
         writeln!(self.writer, "<subroutineBody>").unwrap();
         // '{'
         self.tokenizer.advance();
@@ -240,10 +210,9 @@ impl Engine {
             }
         }
         writeln!(self.writer, "</subroutineBody>").unwrap();
-        writeln!(self.writer, "</subroutineDec>").unwrap();
     }
 
-    pub fn compile_parameter_list(&mut self) { // this method looks ahead a ')' symbol token.
+    pub fn compile_parameter_list(&mut self) {
         writeln!(self.writer, "<parameterList>").unwrap();
         // (type varName (',' type varName)*)?
         'parameterList: loop {
@@ -262,15 +231,7 @@ impl Engine {
                 }
             }
             // varName
-            self.tokenizer.advance();
-            match self.tokenizer.token_type() {
-                Token::Identifier(var_name) => {
-                    writeln!(self.writer, "<identifier> {} </identifier>", var_name).unwrap();
-                },
-                t => {
-                    panic!("varName expected, found {}", t);
-                }
-            }
+            self.compile_identifier();
             // ','
             match self.tokenizer.peek_next_token() {
                 &Token::Symbol(comma @ ',') => {
@@ -292,52 +253,17 @@ impl Engine {
         match self.tokenizer.token_type() {
             Token::Keyword(&var @ "var") => {
                 writeln!(self.writer, "<keyword> {} </keyword>", var).unwrap();
-                /*
-                    s => {
-                        panic!("'static' or 'field' expected, found {}", s);
-                    }
-                }
-                */
             },
             t => {
                 panic!("'var' expected, found {}", t);
             }
         }
         // type
-        self.tokenizer.advance();
-        match self.tokenizer.token_type() {
-            Token::Keyword(&type_name @ "int" | "char" | "boolean") => {
-                writeln!(self.writer, "<keyword> {} </keyword>", type_name).unwrap();
-                /*
-                match type_name.as_str() => {
-                    'int' | 'char' | 'boolean' => {
-                        writeln!(self.writer, "<keyword> {} </keyword>", type_name).unwrap();
-                    },
-                    s => {
-                        panic!("'int', 'char', or 'boolean' expected, found {}", s);
-                    }
-                }
-                */
-            },
-            Token::Identifier(class_name) => {
-                writeln!(self.writer, "<identifier> {} </identifier>", class_name).unwrap();
-            },
-            t => {
-                panic!("type expected, found {}", t);
-            }
-        }
+        self.compile_type();
         // varName (',' varName)*
         'varName: loop {
             // varName
-            self.tokenizer.advance();
-            match self.tokenizer.token_type() {
-                Token::Identifier(var_name) => {
-                    writeln!(self.writer, "<identifier> {} </identifier>", var_name).unwrap();
-                },
-                t => {
-                    panic!("varName expected, found {}", t);
-                }
-            }
+            compile_identifier();
             // ','
             match self.tokenizer.peek_next_token() {
                 &Token::Symbol(comma @ ',') => {
@@ -359,13 +285,97 @@ impl Engine {
         writeln!(self.writer, "</varDec>").unwrap();
     }
 
-    pub fn compile_statements(&mut self) { unimplemented!(); }
-    pub fn compile_do(&mut self) { unimplemented!(); }
+    pub fn compile_statements(&mut self) {
+        writeln!(self.writer, "<statements>").unwrap();
+        // statement*
+        'statement: loop {
+            match self.tokenizer.peek_next_token() {
+                Token::Keyword(stat) => {
+                    match stat.as_str() {
+                        "let" => {
+                            self.compile_let();
+                        },
+                        "if" => {
+                            self.compile_if();
+                        },
+                        "while" => {
+                            self.compile_while();
+                        },
+                        "do" => {
+                            self.compile_do();
+                        },
+                        "return" => {
+                            self.compile_return();
+                        },
+                        _ => {
+                            panic!("'let', 'if', 'while', 'do', or 'return' expected, found {}", s);
+                        }
+                    }
+                },
+                _ => { break 'statement; }
+            }
+        }
+        writeln!(self.writer, "</statements>").unwrap();
+    }
+
+    pub fn compile_do(&mut self) {
+        writeln!(self.writer, "<doStatement>").unwrap();
+        // 'do'
+        self.tokenizer.advance();
+        match self.tokenizer.token_type() {
+            Token::Keyword(do_stat @ "do") => {
+                writeln!(self.writer, "<keyword> {} </keyword>", do_stat).unwrap();
+            },
+            t => {
+                panic!("'do' expected, found {}", t);
+            }
+        }
+        // subroutineCall
+        self.compile_subroutine_call();
+        writeln!(self.writer, "</doStatements>").unwrap();
+    }
+
+    pub fn compile_type(&mut self) {
+        self.tokenizer.advance();
+        match self.tokenizer.token_type() {
+            Token::Keyword(&type_name @ "int" | "char" | "boolean") => {
+                writeln!(self.writer, "<keyword> {} </keyword>", type_name).unwrap();
+            },
+            Token::Identifier(class_name) => {
+                writeln!(self.writer, "<identifier> {} </identifier>", class_name).unwrap();
+            },
+            t => {
+                panic!("type expected, found {}", t);
+            }
+        }
+    }
+
     pub fn compile_let(&mut self) { unimplemented!(); }
     pub fn compile_while(&mut self) { unimplemented!(); }
     pub fn compile_return(&mut self) { unimplemented!(); }
     pub fn compile_if(&mut self) { unimplemented!(); }
     pub fn compile_expression(&mut self) { unimplemented!(); }
     pub fn compile_term(&mut self) { unimplemented!(); }
-    pub fn compile_expression_lis          t(&mut self) { unimplemented!(); }
+    pub fn compile_expression_list(&mut self) { unimplemented!(); }
+    pub fn compile_subroutine_call(&mut self) { unimplemented!(); }
+
+    fn compile_keyword(&mut self, kw: Keyword) {
+        writeln!(self.writer, "<keyword> {} </keyword>", kw.to_string());
+    }
+
+    fn compile_symbol(&mut self, sym: Symbol) {
+        writeln!(self.writer, "<symbol> {} </symbol>", sym.to_string());
+    }
+
+    fn compile_identifier(&mut self) {
+        self.tokenizer.advance();
+        match self.tokenizer.token_type() {
+            Token::Identifier(ident) => {
+                writeln!(self.writer, "<identifier> {} </identifier>", ident).unwrap();
+            },
+            t => {
+                panic!("identifier expected, found {}", t);
+            }
+        }
+    }
 }
