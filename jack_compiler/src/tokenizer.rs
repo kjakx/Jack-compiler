@@ -190,6 +190,14 @@ impl Tokenizer {
         self.current_token.clone()
     }
 
+    pub fn peek_next_token(&self) -> Option<&Token> {
+        if self.tokens.len() >= 1 {
+            Some(&self.tokens[self.tokens.len() - 1])
+        } else {
+            None
+        }
+    }
+
     pub fn keyword(&self) -> Option<Keyword> {
         match &self.current_token {
             Token::Keyword(kw) => {
