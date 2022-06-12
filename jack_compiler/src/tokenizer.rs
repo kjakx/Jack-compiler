@@ -150,7 +150,7 @@ impl Tokenizer {
                             }
                             reader.consume(chars.len()-1);
 
-                            let word = std::str::from_utf8(&chars).unwrap().to_string();
+                            let word = String::from_utf8(chars).unwrap();
                             if keyword_set.contains(word.as_str()) {
                                 tokens.push(Token::Keyword(word));
                             } else {
