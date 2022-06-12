@@ -66,6 +66,7 @@ impl Tokenizer {
                         // skip newline and ascii whitespace
                         b'\n' => { continue 'tokenize; },
                         c if c.is_ascii_whitespace() => { continue 'tokenize; },
+                        // if a symbol, it is a symbol token or a comment.
                         c if symbol_set.contains(&char::from_u32(c as u32).unwrap()) => {
                             match c {
                                 // If c is a /(slash), the next byte should be checked.
