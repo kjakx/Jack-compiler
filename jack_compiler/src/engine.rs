@@ -3,7 +3,7 @@ use std::fs::File;
 use crate::tokenizer::*;
 
 pub struct Engine {
-    tokenizer: tokenizer::Tokenizer;
+    tokenizer: Tokenizer;
     writer: BufWriter<File>,
 }
 
@@ -70,7 +70,7 @@ impl Engine {
         // 'static' | 'field'
         self.tokenizer.advance();
         match self.tokenizer.token_type() {
-            Token::Keyword(&attribute @ 'static' | 'field') => {
+            Token::Keyword(&attribute @ "static" | "field") => {
                 writeln!(self.writer, "<keyword> {} </keyword>", attribute).unwrap();
                 /*
                     s => {
@@ -140,9 +140,141 @@ impl Engine {
         writeln!(self.writer, "</classVarDec>").unwrap();
     }
     
-    pub fn compile_subroutine(&mut self) { unimplemented!(); }
-    pub fn compile_parameter_list(&mut self) { unimplemented!(); }
-    pub fn compile_var_dec(&mut self) { unimplemented!(); }
+    pub fn compile_subroutine(&mut self) {
+        writeln!(self.writer, "<subroutineDec>").unwrap();
+
+
+    }
+    pub fn compile_parameter_list(&mut self) { // this method looks ahead a ')' symbol token.
+        writeln!(self.writer, "<parameterList>").unwrap();
+        // (type varName (',' type varName)*)?
+        'parameterList: loop {
+            // type?
+            self.tokenizer.advance();
+            match self.tokenizer.token_type() {
+                Token::Keyword(&type_name @ "int" | "char" | "boolean") => {
+                    writeln!(self.writer, "<keyword> {} </keyword>", type_name).unwrap();
+                    /*
+                    match type_name.as_str() => {
+                        'int' | 'char' | 'boolean' => {
+                            writeln!(self.writer, "<keyword> {} </keyword>", type_name).unwrap();
+                        },
+                        s => {
+                            panic!("'int', 'char', or 'boolean' expected, found {}", s);
+                        }
+                    }
+                    */
+                },
+                Token::Identifier(class_name) => {
+                    writeln!(self.writer, "<identifier> {} </identifier>", class_name).unwrap();
+                },
+                Token::Symbol(right_parenthesis @ ')') => {
+                    break 'parameterList;
+                }
+                t => {
+                    panic!("type or ')' expected, found {}", t);
+                }
+            }
+            // varName
+            self.tokenizer.advance();
+            match self.tokenizer.token_type() {
+                Token::Identifier(var_name) => {
+                    writeln!(self.writer, "<identifier> {} </identifier>", var_name).unwrap();
+                },
+                t => {
+                    panic!("varName expected, found {}", t);
+                }
+            }
+            // ','
+            self.tokenizer.advance();
+            match self.tokenizer.token_type() {
+                Token::Symbol(comma @ ',') => {
+                    writeln!(self.writer, "<symbol> {} </symbol>", comma).unwrap();
+                },
+                Token::Symbol(right_parenthesis @ ')') => {
+                    break 'parameterList;
+                }
+                t => {
+                    panic!("type or ')' expected, found {}", t);
+                }
+            }
+        }
+        writeln!(self.writer, "</parameterList>").unwrap();
+    }
+
+    pub fn compile_var_dec(&mut self) {
+        writeln!(self.writer, "<varDec>").unwrap();
+        // 'var'
+        self.tokenizer.advance();
+        match self.tokenizer.token_type() {
+            Token::Keyword(&var @ "var") => {
+                writeln!(self.writer, "<keyword> {} </keyword>", var).unwrap();
+                /*
+                    s => {
+                        panic!("'static' or 'field' expected, found {}", s);
+                    }
+                }
+                */
+            },
+            t => {
+                panic!("'var' expected, found {}", t);
+            }
+        }
+        // type
+        self.tokenizer.advance();
+        match self.tokenizer.token_type() {
+            Token::Keyword(&type_name @ "int" | "char" | "boolean") => {
+                writeln!(self.writer, "<keyword> {} </keyword>", type_name).unwrap();
+                /*
+                match type_name.as_str() => {
+                    'int' | 'char' | 'boolean' => {
+                        writeln!(self.writer, "<keyword> {} </keyword>", type_name).unwrap();
+                    },
+                    s => {
+                        panic!("'int', 'char', or 'boolean' expected, found {}", s);
+                    }
+                }
+                */
+            },
+            Token::Identifier(class_name) => {
+                writeln!(self.writer, "<identifier> {} </identifier>", class_name).unwrap();
+            },
+            t => {
+                panic!("type expected, found {}", t);
+            }
+        }
+        // varName (',' varName)*
+        'varName: loop {
+            // varName
+            self.tokenizer.advance();
+            match self.tokenizer.token_type() {
+                Token::Identifier(var_name) => {
+                    writeln!(self.writer, "<identifier> {} </identifier>", var_name).unwrap();
+                },
+                t => {
+                    panic!("varName expected, found {}", t);
+                }
+            }
+            // ','
+            self.tokenizer.advance();
+            match self.tokenizer.token_type() {
+                Token::Symbol(comma @ ',') => {
+                    writeln!(self.writer, "<symbol> {} </symbol>", comma).unwrap();
+                },
+                _ => { break 'varName; }
+            }
+        }
+        // ';'
+        match self.tokenizer.token_type() {
+            Token::Symbol(semicolon @ ';') => {
+                writeln!(self.writer, "<symbol> {} </symbol>", semicolon).unwrap();
+            },
+            _ => {
+                panic!("';' expected, found {}", t);
+            }
+        }
+        writeln!(self.writer, "</varDec>").unwrap();
+    }
     pub fn compile_statements(&mut self) { unimplemented!(); }
     pub fn compile_do(&mut self) { unimplemented!(); }
     pub fn compile_let(&mut self) { unimplemented!(); }
