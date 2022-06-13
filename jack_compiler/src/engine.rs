@@ -476,12 +476,43 @@ impl Engine {
         }
         writeln!(self.writer, "</returnStatements>").unwrap();
     }
-    
-    pub fn compile_if(&mut self) { unimplemented!(); }
+
+    pub fn compile_if(&mut self) {
+        writeln!(self.writer, "<ifStatements>").unwrap();
+        // 'if' '(' expression ')'
+        self.compile_keyword_expect("if");
+        self.compile_symbol_expect('(');
+        self.compile_expression();
+        self.compile_symbol_expect(')');
+        // '{' statements '}'
+        self.compile_symbol_expect('{');
+        self.compile_statements();
+        self.compile_symbol_expect('}');
+        // ('else' '{' statements '}')?
+        if let &Token::Keyword(_ @ "else") = self.tokenizer.peek_next_token() {
+            // 'else' '{' statements '}'
+            self.compile_keyword_expect("else");
+            self.compile_symbol_expect('{');
+            self.compile_statements();
+            self.compile_symbol_expect('}');
+        }
+        writeln!(self.writer, "</ifStatements>").unwrap();
+    }
     pub fn compile_expression(&mut self) { unimplemented!(); }
     pub fn compile_term(&mut self) { unimplemented!(); }
     pub fn compile_expression_list(&mut self) { unimplemented!(); }
     pub fn compile_subroutine_call(&mut self) { unimplemented!(); }
+
+    fn compile_keyword_expect(&mut self, kw: &str) {
+        match self.tokenizer.peek_next_token() {
+            &Token::Keyword(_ @ kw) {
+                self.compile_keyword();
+            },
+            t => {
+                panic!("{} expected, found {}", kw, t);
+            }
+        }
+    }
 
     fn compile_keyword(&mut self) {
         self.tokenizer.advance();
@@ -491,6 +522,17 @@ impl Engine {
             },
             t => {
                 panic!("keyword expected, found {}", t);
+            }
+        }
+    }
+
+    fn compile_symbol_expect(&mut self, sym: char) {
+        match self.tokenizer.peek_next_token() {
+            &Token::Symbol(_ @ sym) {
+                self.compile_symbol();
+            },
+            t => {
+                panic!("{} expected, found {}", sym, t);
             }
         }
     }
