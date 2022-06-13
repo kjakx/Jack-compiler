@@ -122,26 +122,24 @@ impl Engine {
     pub fn compile_subroutine_dec(&mut self) {
         writeln!(self.writer, "<subroutineDec>").unwrap();
         // 'constructor' | 'function' | 'method'
-        self.tokenizer.advance();
-        match self.tokenizer.token_type() {
-            Token::Keyword(&attribute @ "constructor" | "function" | "method") => {
-                writeln!(self.writer, "<keyword> {} </keyword>", attribute).unwrap();
+        match self.tokenizer.peek_next_token() {
+            Token::Keyword(&_ @ "constructor" | "function" | "method") => {
+                self.compile_keyword();
             },
             t => {
                 panic!("'constructor', 'function' or 'method' expected, found {}", t);
             }
         }
         // 'void' | type
-        self.tokenizer.advance();
-        match self.tokenizer.token_type() {
-            Token::Keyword(&void @ "void") => {
-                writeln!(self.writer, "<keyword> {} </keyword>", void).unwrap();
+        match self.tokenizer.peek_next_token() {
+            Token::Keyword(&_ @ "void") => {
+                self.compile_keyword();
             },
-            Token::Keyword(&type_name @ "int" | "char" | "boolean") => {
-                writeln!(self.writer, "<keyword> {} </keyword>", type_name).unwrap();
+            Token::Keyword(&_ @ "int" | "char" | "boolean") => {
+                self.compile_keyword();
             },
-            Token::Identifier(class_name) => {
-                writeln!(self.writer, "<identifier> {} </identifier>", class_name).unwrap();
+            Token::Identifier => {
+                self.compile_identifier();
             },
             t => {
                 panic!("'void' or type expected, found {}", t);
@@ -150,10 +148,9 @@ impl Engine {
         // subroutineName
         self.compile_identifier();
         // '('
-        self.tokenizer.advance();
-        match self.tokenizer.token_type() {
+        match self.tokenizer.peek_next_token() {
             Token::Symbol(left_parenthesis @ '(') => {
-                writeln!(self.writer, "<symbol> {} </symbol>", left_parenthesis).unwrap();
+                self.compile_symbol();
             },
             t => {
                 panic!("'(' expected, found {}", t);
@@ -162,10 +159,9 @@ impl Engine {
         // parameterList
         self.compile_parameter_list();
         // ')'
-        self.tokenizer.advance();
-        match self.tokenizer.token_type() {
-            Token::Symbol(left_parenthesis @ ')') => {
-                writeln!(self.writer, "<symbol> {} </symbol>", left_parenthesis).unwrap();
+        match self.tokenizer.peek_next_token() {
+            Token::Symbol(_ @ ')') => {
+                self.compile_symbol();
             },
             t => {
                 panic!("')' expected, found {}", t);
