@@ -21,26 +21,10 @@ impl Engine {
 
     pub fn compile_class(&mut self) {
         writeln!(self.writer, "<class>").unwrap();
-        // 'class'
-        match self.tokenizer.peek_next_token() {
-            &Token::Keyword(_ @ "class") => {
-                self.compile_keyword();
-            },
-            t => {
-                panic!("'class' expected, found {}", t);
-            }
-        }
-        // className
+        // 'class' className '{'
+        self.compile_keyword_expect("class");
         self.compile_identifier();
-        // '{'
-        match self.tokenizer.peek_next_token() {
-            Token::Symbol(_ @ '{') => {
-                self.compile_symbol();
-            },
-            t => {
-                panic!("'{{' expected, found {}", t);
-            }
-        }
+        self.compile_symbol_expect('{');
         // classVarDec*
         'classVarDec: loop {
             match self.tokenizer.peek_next_token() {
@@ -64,14 +48,7 @@ impl Engine {
             }
         }
         // '}'
-        match self.tokenizer.peek_next_token() {
-            &Token::Symbol(right_brace @ '}') => {
-                self.compile_symbol();
-            },
-            t => {
-                panic!("'}}' expected, found {}", t);
-            }
-        }
+        self.compile_symbol_expect('}');
         // finish parsing class
         writeln!(self.writer, "</class>").unwrap();
     }
