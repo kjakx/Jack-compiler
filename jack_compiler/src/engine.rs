@@ -235,8 +235,7 @@ impl Engine {
             // ','
             match self.tokenizer.peek_next_token() {
                 &Token::Symbol(comma @ ',') => {
-                    self.tokenizer.advance();
-                    writeln!(self.writer, "<symbol> {} </symbol>", comma).unwrap();
+                    self.compile_symbol();
                 },
                 _ => {
                     break 'parameterList;
@@ -249,34 +248,42 @@ impl Engine {
     pub fn compile_var_dec(&mut self) {
         writeln!(self.writer, "<varDec>").unwrap();
         // 'var'
-        self.tokenizer.advance();
-        match self.tokenizer.token_type() {
+        match self.tokenizer.peek_next_token() {
             Token::Keyword(&var @ "var") => {
-                writeln!(self.writer, "<keyword> {} </keyword>", var).unwrap();
+                self.compile_keyword();
             },
             t => {
                 panic!("'var' expected, found {}", t);
             }
         }
         // type
-        self.compile_type();
+        match self.tokenizer.peek_next_token() {
+            &Token::Keyword(&type_name @ "int" | "char" | "boolean") => {
+                self.compile_keyword();
+            },
+            &Token::Identifier => {
+                self.compile_identifier();
+            },
+            t => {
+                panic!("type expected, found {}", t);
+            }
+        }
         // varName (',' varName)*
         'varName: loop {
             // varName
             compile_identifier();
             // ','
             match self.tokenizer.peek_next_token() {
-                &Token::Symbol(comma @ ',') => {
-                    self.tokenizer.advance();
-                    writeln!(self.writer, "<symbol> {} </symbol>", comma).unwrap();
+                &Token::Symbol(_ @ ',') => {
+                    self.compile_symbol();
                 },
                 _ => { break 'varName; }
             }
         }
         // ';'
-        match self.tokenizer.token_type() {
-            Token::Symbol(semicolon @ ';') => {
-                writeln!(self.writer, "<symbol> {} </symbol>", semicolon).unwrap();
+        match self.tokenizer.peek_next_token() {
+            Token::Symbol(_ @ ';') => {
+                self.compile_symbol();
             },
             _ => {
                 panic!("';' expected, found {}", t);
