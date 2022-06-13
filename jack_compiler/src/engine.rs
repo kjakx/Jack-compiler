@@ -245,14 +245,7 @@ impl Engine {
     pub fn compile_var_dec(&mut self) {
         writeln!(self.writer, "<varDec>").unwrap();
         // 'var'
-        match self.tokenizer.peek_next_token() {
-            Token::Keyword(&var @ "var") => {
-                self.compile_keyword();
-            },
-            t => {
-                panic!("'var' expected, found {}", t);
-            }
-        }
+        self.compile_keyword_expect("var");
         // type
         match self.tokenizer.peek_next_token() {
             &Token::Keyword(&type_name @ "int" | "char" | "boolean") => {
@@ -268,7 +261,7 @@ impl Engine {
         // varName (',' varName)*
         'varName: loop {
             // varName
-            compile_identifier();
+            self.compile_identifier();
             // ','
             match self.tokenizer.peek_next_token() {
                 &Token::Symbol(_ @ ',') => {
@@ -278,14 +271,7 @@ impl Engine {
             }
         }
         // ';'
-        match self.tokenizer.peek_next_token() {
-            Token::Symbol(_ @ ';') => {
-                self.compile_symbol();
-            },
-            _ => {
-                panic!("';' expected, found {}", t);
-            }
-        }
+        self.compile_symbol_expect(';');
         writeln!(self.writer, "</varDec>").unwrap();
     }
 
