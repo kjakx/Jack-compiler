@@ -324,16 +324,8 @@ impl Engine {
 
     pub fn compile_do(&mut self) {
         writeln!(self.writer, "<doStatement>").unwrap();
-        // 'do'
-        match self.tokenizer.peek_next_token() {
-            &Token::Keyword(_ @ "do") => {
-                self.compile_keyword();
-            },
-            t => {
-                panic!("'do' expected, found {}", t);
-            }
-        }
-        // subroutineCall
+        // 'do' subroutineCall
+        self.compile_keyword_expect("do");
         self.compile_subroutine_call();
         writeln!(self.writer, "</doStatements>").unwrap();
     }
