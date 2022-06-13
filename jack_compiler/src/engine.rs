@@ -179,10 +179,9 @@ impl Engine {
     pub fn compile_subroutine_body(&mut self) {
         writeln!(self.writer, "<subroutineBody>").unwrap();
         // '{'
-        self.tokenizer.advance();
-        match self.tokenizer.token_type() {
-            Token::Symbol(left_brace @ '{') => {
-                writeln!(self.writer, "<symbol> {} </symbol>", left_brace).unwrap();
+        match self.tokenizer.peek_next_token() {
+            Token::Symbol(_ @ '{') => {
+                self.compile_symbol();
             },
             t => {
                 panic!("'{{' expected, found {}", t);
@@ -200,10 +199,9 @@ impl Engine {
         // statements
         self.compile_statements();
         // '}'
-        self.tokenizer.advance();
-        match self.tokenizer.token_type() {
-            Token::Symbol(right_brace @ '}') => {
-                writeln!(self.writer, "<symbol> {} </symbol>", right_brace).unwrap();
+        match self.tokenizer.peek_next_token() {
+            Token::Symbol(_ @ '}') => {
+                self.compile_symbol();
             },
             t => {
                 panic!("'}}' expected, found {}", t);
