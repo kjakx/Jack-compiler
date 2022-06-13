@@ -359,12 +359,28 @@ impl Engine {
     pub fn compile_expression_list(&mut self) { unimplemented!(); }
     pub fn compile_subroutine_call(&mut self) { unimplemented!(); }
 
-    fn compile_keyword(&mut self, kw: Keyword) {
-        writeln!(self.writer, "<keyword> {} </keyword>", kw.to_string());
+    fn compile_keyword(&mut self) {
+        self.tokenizer.advance();
+        match self.tokenizer.token_type() {
+            Token::Keyword(kw) => {
+                writeln!(self.writer, "<keyword> {} </keyword>", kw).unwrap();
+            },
+            t => {
+                panic!("keyword expected, found {}", t);
+            }
+        }
     }
 
-    fn compile_symbol(&mut self, sym: Symbol) {
-        writeln!(self.writer, "<symbol> {} </symbol>", sym.to_string());
+    fn compile_symbol(&mut self) {
+        self.tokenizer.advance();
+        match self.tokenizer.token_type() {
+            Token::Symbol(sym) => {
+                writeln!(self.writer, "<symbol> {} </symbol>", sym).unwrap();
+            },
+            t => {
+                panic!("symbol expected, found {}", t);
+            }
+        }
     }
 
     fn compile_identifier(&mut self) {
@@ -375,6 +391,30 @@ impl Engine {
             },
             t => {
                 panic!("identifier expected, found {}", t);
+            }
+        }
+    }
+
+    fn compile_integer_constant(&mut self) {
+        self.tokenizer.advance();
+        match self.tokenizer.token_type() {
+            Token::IntConst(int_const) => {
+                writeln!(self.writer, "<integerConstant> {} </integerConstant>", int_const).unwrap();
+            },
+            t => {
+                panic!("integerConstant expected, found {}", t);
+            }
+        }
+    }
+
+    fn compile_string_constant(&mut self) {
+        self.tokenizer.advance();
+        match self.tokenizer.token_type() {
+            Token::StringConst(str_const) => {
+                writeln!(self.writer, "<stringConstant> {} </stringConstant>", str_const).unwrap();
+            },
+            t => {
+                panic!("stringConstant expected, found {}", t);
             }
         }
     }
