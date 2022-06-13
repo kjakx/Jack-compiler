@@ -348,8 +348,26 @@ impl Engine {
 
     pub fn compile_expression_list(&mut self) {
         writeln!(self.writer, "<expressionList>").unwrap();
+        // (expression (',' expression)* )?
+        match self.tokenizer.peek_next_token() {
+            &Token::Symbol(_ @ ')') => (),
+            _ => {
+                // expression (',' expression)*
+                self.compile_expression();
+                'expression loop {
+                    match self.tokenizer.peek_next_token() {
+                        &Token::Symbol(_ @ ',') => {
+                            compile_symbol_expect(',');
+                        },
+                        _ => { break 'expression; }
+                    }
+                    self.compile_expression();
+                }
+            }
+        }
         writeln!(self.writer, "</expressionList>").unwrap();
     }
+
     pub fn compile_subroutine_call(&mut self) { unimplemented!(); }
 
     fn compile_keyword_expect(&mut self, kw: &str) {
