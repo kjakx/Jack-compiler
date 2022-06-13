@@ -136,7 +136,7 @@ impl Engine {
         // varDec*
         'varDec: loop {
             match self.tokenizer.peek_next_token() {
-                Token::Keyword(var @ 'var') => {
+                Token::Keyword(_ @ "var") => {
                     self.compile_var_dec();
                 },
                 _ => { break 'varDec; }
