@@ -218,13 +218,11 @@ impl Engine {
         'parameterList: loop {
             // type
             match self.tokenizer.peek_next_token() {
-                &Token::Keyword(&type_name @ "int" | "char" | "boolean") => {
-                    self.tokenizer.advance();
-                    writeln!(self.writer, "<keyword> {} </keyword>", type_name).unwrap();
+                &Token::Keyword(&_ @ "int" | "char" | "boolean") => {
+                    self.compile_keyword();
                 },
-                &Token::Identifier(class_name) => {
-                    self.tokenizer.advance();
-                    writeln!(self.writer, "<identifier> {} </identifier>", class_name).unwrap();
+                &Token::Identifier => {
+                    self.compile_identifier();
                 },
                 _ => {
                     break 'parameterList;
