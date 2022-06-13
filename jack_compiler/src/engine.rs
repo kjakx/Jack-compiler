@@ -235,7 +235,7 @@ impl Engine {
                         "return" => {
                             self.compile_return();
                         },
-                        _ => {
+                        s => {
                             panic!("'let', 'if', 'while', 'do', or 'return' expected, found {}", s);
                         }
                     }
