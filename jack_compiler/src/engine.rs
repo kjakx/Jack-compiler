@@ -261,11 +261,9 @@ impl Engine {
         self.compile_identifier();
         // ('[' expression ']')?
         if let &Token::Symbol(_ @ '[') = self.tokenizer.peek_next_token() {
-            // '['
+            // '[' expression ']'
             self.compile_symbol_expect('[');
-            // expression
             self.compile_expression();
-            // ']'
             self.compile_symbol_expect(']')
         }
         // '=' expression ';'
