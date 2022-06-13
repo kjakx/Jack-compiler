@@ -392,8 +392,61 @@ impl Engine {
         }
         writeln!(self.writer, "</letStatement>").unwrap();
     }
+
+    pub fn compile_while(&mut self) {
+        writeln!(self.writer, "<whileStatement>").unwrap();
+        // 'while'
+        match self.tokenizer.peek_next_token() {
+            &Token::Keyword(_ @ "while") {
+                self.compile_keyword();
+            },
+            t => {
+                panic!("'while' expected, found {}", t);
+            }
+        }
+        // '('
+        match self.tokenizer.peek_next_token() {
+            &Token::Symbol(_ @ '(') {
+                self.compile_symbol();
+            },
+            t => {
+                panic!("'(' expected, found {}");
+            }
+        }
+        // expression
+        self.compile_expression();
+        // ')'
+        match self.tokenizer.peek_next_token() {
+            &Token::Symbol(_ @ ')') {
+                self.compile_symbol();
+            },
+            t => {
+                panic!("')' expected, found {}");
+            }
+        }
+        // '{'
+        match self.tokenizer.peek_next_token() {
+            &Token::Symbol(_ @ '{') {
+                self.compile_symbol();
+            },
+            t => {
+                panic!("'{' expected, found {}");
+            }
+        }
+        // statements
+        self.compile_statements();
+        // '}'
+        match self.tokenizer.peek_next_token() {
+            &Token::Symbol(_ @ '}') {
+                self.compile_symbol();
+            },
+            t => {
+                panic!("'}' expected, found {}");
+            }
+        }
+        writeln!(self.writer, "</whileStatement>").unwrap();
+    }
     
-    pub fn compile_while(&mut self) { unimplemented!(); }
     pub fn compile_return(&mut self) { unimplemented!(); }
     pub fn compile_if(&mut self) { unimplemented!(); }
     pub fn compile_expression(&mut self) { unimplemented!(); }
