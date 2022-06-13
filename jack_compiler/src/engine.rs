@@ -324,9 +324,32 @@ impl Engine {
         }
         writeln!(self.writer, "</ifStatements>").unwrap();
     }
-    pub fn compile_expression(&mut self) { unimplemented!(); }
+
+    pub fn compile_expression(&mut self) {
+        writeln!(self.writer, "<expression>").unwrap();
+        // term
+        self.compile_term();
+        // (op term)*
+        'term loop {
+            match self.tokenizer.peek_next_token() {
+                Token::Symbol(_ @ '+' | '-' | '*' | '/' | '&' | '|' | '<' | '>' | '=') => {
+                    self.compile_symbol();
+                },
+                _ => {
+                    break 'term;
+                }
+            }
+            self.compile_term();
+        }
+        writeln!(self.writer, "</expression>").unwrap();
+    }
+
     pub fn compile_term(&mut self) { unimplemented!(); }
-    pub fn compile_expression_list(&mut self) { unimplemented!(); }
+
+    pub fn compile_expression_list(&mut self) {
+        writeln!(self.writer, "<expressionList>").unwrap();
+        writeln!(self.writer, "</expressionList>").unwrap();
+    }
     pub fn compile_subroutine_call(&mut self) { unimplemented!(); }
 
     fn compile_keyword_expect(&mut self, kw: &str) {
