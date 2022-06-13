@@ -292,14 +292,7 @@ impl Engine {
     pub fn compile_return(&mut self) {
         writeln!(self.writer, "<returnStatement>").unwrap();
         // 'return'
-        match self.tokenizer.peek_next_token() {
-            &Token::Keyword(_ @ "return") => {
-                self.compile_keyword();
-            },
-            t => {
-                panic!("'return' expected, found {}", t);
-            }
-        }
+        self.compile_keyword_expect("return");
         // expression?
         match self.tokenizer.peek_next_token() {
             &Token::Symbol(_ @ ';') => (),
@@ -308,14 +301,7 @@ impl Engine {
             }
         }
         // ';'
-        match self.tokenizer.peek_next_token() {
-            &Token::Symbol(_ @ ';') => {
-                self.compile_symbol();
-            },
-            t => {
-                panic!("';' expected, found {}", t);
-            }
-        }
+        self.compile_symbol_expect(';');
         writeln!(self.writer, "</returnStatements>").unwrap();
     }
 
