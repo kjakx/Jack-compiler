@@ -338,7 +338,61 @@ impl Engine {
         writeln!(self.writer, "</doStatements>").unwrap();
     }
 
-    pub fn compile_let(&mut self) { unimplemented!(); }
+    pub fn compile_let(&mut self) {
+        writeln!(self.writer, "<letStatement>").unwrap();
+        // 'let'
+        match self.tokenizer.peek_next_token() {
+            &Token::Keyword(_ @ "let") {
+                self.compile_keyword();
+            },
+            t => {
+                panic!("'let' expected, found {}", t);
+            }
+        }
+        // varName
+        self.compile_identifier();
+        // ('[' expression ']')?
+        match self.tokenizer.peek_next_token() {
+            &Token::Symbol(_ @ '[') => {
+                // '['
+                self.compile_symbol();
+                // expression
+                self.compile_expression();
+                // ']'
+                match self.tokenizer.peek_next_token() {
+                    &Token::Symbol(_ @ ']') => {
+                        self.compile_symbol();
+                    },
+                    _ => {
+                        panic!("']' expected, found {}");
+                    }
+                }
+            },
+            _ => ()
+        }
+        // '='
+        match self.tokenizer.peek_next_token() {
+            &Token::Symbol(_ @ '=') {
+                self.compile_symbol();
+            },
+            t => {
+                panic!("'=' expected, found {}");
+            }
+        }
+        // expression
+        self.compile_expression();
+        // ';'
+        match self.tokenizer.peek_next_token() {
+            &Token::Symbol(_ @ ';') {
+                self.compile_symbol();
+            },
+            t => {
+                panic!("';' expected, found {}");
+            }
+        }
+        writeln!(self.writer, "</letStatement>").unwrap();
+    }
+    
     pub fn compile_while(&mut self) { unimplemented!(); }
     pub fn compile_return(&mut self) { unimplemented!(); }
     pub fn compile_if(&mut self) { unimplemented!(); }
