@@ -21,11 +21,10 @@ impl Engine {
 
     pub fn compile_class(&mut self) {
         writeln!(self.writer, "<class>").unwrap();
-        // "class"
-        self.tokenizer.advance();
-        match self.tokenizer.token_type() {
-            Token::Keyword(class) => {
-                writeln!(self.writer, "<keyword> {} </keyword>", class_name).unwrap();
+        // 'class'
+        match self.tokenizer.peek_next_token() {
+            &Token::Keyword(_ @ "class") => {
+                self.compile_keyword();
             },
             t => {
                 panic!("'class' expected, found {}", t);
@@ -34,10 +33,9 @@ impl Engine {
         // className
         self.compile_identifier();
         // '{'
-        self.tokenizer.advance();
-        match self.tokenizer.token_type() {
-            Token::Symbol(left_brace @ '{') => {
-                writeln!(self.writer, "<symbol> {} </symbol>", left_brace).unwrap();
+        match self.tokenizer.peek_next_token() {
+            Token::Symbol(_ @ '{') => {
+                self.compile_symbol();
             },
             t => {
                 panic!("'{{' expected, found {}", t);
@@ -46,7 +44,7 @@ impl Engine {
         // classVarDec*
         'classVarDec: loop {
             match self.tokenizer.peek_next_token() {
-                &Token::Keyword(&attribute @ "static" | "field") => {
+                &Token::Keyword(&_ @ "static" | "field") => {
                     self.compile_class_var_dec();
                 },
                 _ => {
@@ -57,7 +55,7 @@ impl Engine {
         // subroutineDec*
         'subroutineDec: loop {
             match self.tokenizer.peek_next_token() {
-                &Token::Keyword(&attribute @ "constructor" | "function" | "method") => {
+                &Token::Keyword(&_ @ "constructor" | "function" | "method") => {
                     self.compile_subroutine();
                 },
                 _ => {
@@ -66,10 +64,9 @@ impl Engine {
             }
         }
         // '}'
-        self.tokenizer.advance();
-        match self.tokenizer.token_type() {
-            Token::Symbol(right_brace @ '}') => {
-                writeln!(self.writer, "<symbol> {} </symbol>", right_brace).unwrap();
+        match self.tokenizer.peek_next_token() {
+            &Token::Symbol(right_brace @ '}') => {
+                self.compile_symbol();
             },
             t => {
                 panic!("'}}' expected, found {}", t);
