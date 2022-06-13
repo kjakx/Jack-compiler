@@ -82,34 +82,42 @@ impl Engine {
     pub fn compile_class_var_dec(&mut self) {
         writeln!(self.writer, "<classVarDec>").unwrap();
         // 'static' | 'field'
-        match self.tokenizer.token_type() {
-            Token::Keyword(&attribute @ "static" | "field") => {
-                writeln!(self.writer, "<keyword> {} </keyword>", attribute).unwrap();
+        match self.tokenizer.peek_next_token() {
+            &Token::Keyword(&_ @ "static" | "field") => {
+                compile_keyword();
             },
             t => {
                 panic!("'static' or 'field' expected, found {}", t);
             }
         }
         // type
-        self.compile_type();
+        match self.tokenizer.peek_next_token() {
+            &Token::Keyword(&_ @ "int" | "char" | "boolean") => {
+                self.compile_keyword();
+            },
+            &Token::Identifier => {
+                self.compile_identifier();
+            },
+            t => {
+                panic!("type expected, found {}", t);
+            }
+        }
         // varName (',' varName)*
         'varName: loop {
             // varName
             self.compile_identifier();
             // ','
             match self.tokenizer.peek_next_token() {
-                &Token::Symbol(comma @ ',') => {
-                    self.tokenizer.advance();
-                    writeln!(self.writer, "<symbol> {} </symbol>", comma).unwrap();
+                &Token::Symbol(_ @ ',') => {
+                    self.compile_symbol();
                 },
                 _ => { break 'varName; }
             }
         }
         // ';'
-        self.tokenizer.advance();
-        match self.tokenizer.token_type() {
-            Token::Symbol(semicolon @ ';') => {
-                writeln!(self.writer, "<symbol> {} </symbol>", semicolon).unwrap();
+        match self.tokenizer.peek_next_token() {
+            &Token::Symbol(_ @ ';') => {
+                self.compile_symbol();
             },
             _ => {
                 panic!("';' expected, found {}", t);
