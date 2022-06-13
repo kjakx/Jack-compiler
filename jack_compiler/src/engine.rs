@@ -112,15 +112,7 @@ impl Engine {
             }
         }
         // ';'
-        match self.tokenizer.peek_next_token() {
-            &Token::Symbol(_ @ ';') => {
-                self.compile_symbol();
-            },
-            _ => {
-                panic!("';' expected, found {}", t);
-            }
-        }
-        // finish parsing classVarDec
+        self.compile_symbol_expect(';');
         writeln!(self.writer, "</classVarDec>").unwrap();
     }
     
@@ -150,28 +142,11 @@ impl Engine {
                 panic!("'void' or type expected, found {}", t);
             }
         }
-        // subroutineName
+        // subroutineName '(' parameterList ')'
         self.compile_identifier();
-        // '('
-        match self.tokenizer.peek_next_token() {
-            Token::Symbol(left_parenthesis @ '(') => {
-                self.compile_symbol();
-            },
-            t => {
-                panic!("'(' expected, found {}", t);
-            }
-        }
-        // parameterList
+        self.compile_symbol_expect('(');
         self.compile_parameter_list();
-        // ')'
-        match self.tokenizer.peek_next_token() {
-            Token::Symbol(_ @ ')') => {
-                self.compile_symbol();
-            },
-            t => {
-                panic!("')' expected, found {}", t);
-            }
-        }
+        self.compile_symbol_expect(')');
         // subroutineBody
         self.compile_subroutine_body();
         writeln!(self.writer, "</subroutineDec>").unwrap();
@@ -180,14 +155,7 @@ impl Engine {
     pub fn compile_subroutine_body(&mut self) {
         writeln!(self.writer, "<subroutineBody>").unwrap();
         // '{'
-        match self.tokenizer.peek_next_token() {
-            Token::Symbol(_ @ '{') => {
-                self.compile_symbol();
-            },
-            t => {
-                panic!("'{{' expected, found {}", t);
-            }
-        }
+        self.compile_keyword_expect('{');
         // varDec*
         'varDec: loop {
             match self.tokenizer.peek_next_token() {
@@ -200,14 +168,7 @@ impl Engine {
         // statements
         self.compile_statements();
         // '}'
-        match self.tokenizer.peek_next_token() {
-            Token::Symbol(_ @ '}') => {
-                self.compile_symbol();
-            },
-            t => {
-                panic!("'}}' expected, found {}", t);
-            }
-        }
+        self.compile_keyword_expect('}');
         writeln!(self.writer, "</subroutineBody>").unwrap();
     }
 
