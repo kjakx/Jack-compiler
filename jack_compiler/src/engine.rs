@@ -340,56 +340,22 @@ impl Engine {
 
     pub fn compile_let(&mut self) {
         writeln!(self.writer, "<letStatement>").unwrap();
-        // 'let'
-        match self.tokenizer.peek_next_token() {
-            &Token::Keyword(_ @ "let") {
-                self.compile_keyword();
-            },
-            t => {
-                panic!("'let' expected, found {}", t);
-            }
-        }
-        // varName
+        // 'let' varName 
+        self.compile_keyword_expect("let");
         self.compile_identifier();
         // ('[' expression ']')?
-        match self.tokenizer.peek_next_token() {
-            &Token::Symbol(_ @ '[') => {
-                // '['
-                self.compile_symbol();
-                // expression
-                self.compile_expression();
-                // ']'
-                match self.tokenizer.peek_next_token() {
-                    &Token::Symbol(_ @ ']') => {
-                        self.compile_symbol();
-                    },
-                    _ => {
-                        panic!("']' expected, found {}");
-                    }
-                }
-            },
-            _ => ()
+        if let &Token::Symbol(_ @ '[') = self.tokenizer.peek_next_token() {
+            // '['
+            self.compile_symbol_expect('[');
+            // expression
+            self.compile_expression();
+            // ']'
+            self.compile_symbol_expect(']')
         }
-        // '='
-        match self.tokenizer.peek_next_token() {
-            &Token::Symbol(_ @ '=') {
-                self.compile_symbol();
-            },
-            t => {
-                panic!("'=' expected, found {}");
-            }
-        }
-        // expression
+        // '=' expression ';'
+        self.compile_symbol_expect('=');
         self.compile_expression();
-        // ';'
-        match self.tokenizer.peek_next_token() {
-            &Token::Symbol(_ @ ';') {
-                self.compile_symbol();
-            },
-            t => {
-                panic!("';' expected, found {}");
-            }
-        }
+        self.compile_symbol_expect(';');
         writeln!(self.writer, "</letStatement>").unwrap();
     }
 
