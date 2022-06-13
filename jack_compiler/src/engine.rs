@@ -58,7 +58,7 @@ impl Engine {
         // 'static' | 'field'
         match self.tokenizer.peek_next_token() {
             &Token::Keyword(&_ @ "static" | "field") => {
-                compile_keyword();
+                self.compile_keyword();
             },
             t => {
                 panic!("'static' or 'field' expected, found {}", t);
