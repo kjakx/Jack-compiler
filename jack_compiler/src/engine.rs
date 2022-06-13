@@ -321,10 +321,9 @@ impl Engine {
     pub fn compile_do(&mut self) {
         writeln!(self.writer, "<doStatement>").unwrap();
         // 'do'
-        self.tokenizer.advance();
-        match self.tokenizer.token_type() {
-            Token::Keyword(do_stat @ "do") => {
-                writeln!(self.writer, "<keyword> {} </keyword>", do_stat).unwrap();
+        match self.tokenizer.peek_next_token() {
+            &Token::Keyword(do_stat @ "do") => {
+                self.compile_keyword();
             },
             t => {
                 panic!("'do' expected, found {}", t);
