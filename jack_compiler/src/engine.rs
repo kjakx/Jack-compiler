@@ -326,7 +326,7 @@ impl Engine {
         writeln!(self.writer, "<doStatement>").unwrap();
         // 'do'
         match self.tokenizer.peek_next_token() {
-            &Token::Keyword(do_stat @ "do") => {
+            &Token::Keyword(_ @ "do") => {
                 self.compile_keyword();
             },
             t => {
@@ -446,8 +446,37 @@ impl Engine {
         }
         writeln!(self.writer, "</whileStatement>").unwrap();
     }
+
+    pub fn compile_return(&mut self) {
+        writeln!(self.writer, "<returnStatement>").unwrap();
+        // 'return'
+        match self.tokenizer.peek_next_token() {
+            &Token::Keyword(_ @ "return") => {
+                self.compile_keyword();
+            },
+            t => {
+                panic!("'return' expected, found {}", t);
+            }
+        }
+        // expression?
+        match self.tokenizer.peek_next_token() {
+            &Token::Symbol(_ @ ';') => (),
+            _ => {
+                self.compile_expression();
+            }
+        }
+        // ';'
+        match self.tokenizer.peek_next_token() {
+            &Token::Symbol(_ @ ';') => {
+                self.compile_symbol();
+            },
+            t => {
+                panic!("';' expected, found {}", t);
+            }
+        }
+        writeln!(self.writer, "</returnStatements>").unwrap();
+    }
     
-    pub fn compile_return(&mut self) { unimplemented!(); }
     pub fn compile_if(&mut self) { unimplemented!(); }
     pub fn compile_expression(&mut self) { unimplemented!(); }
     pub fn compile_term(&mut self) { unimplemented!(); }
