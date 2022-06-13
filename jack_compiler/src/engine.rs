@@ -335,21 +335,6 @@ impl Engine {
         writeln!(self.writer, "</doStatements>").unwrap();
     }
 
-    pub fn compile_type(&mut self) {
-        self.tokenizer.advance();
-        match self.tokenizer.token_type() {
-            Token::Keyword(&type_name @ "int" | "char" | "boolean") => {
-                writeln!(self.writer, "<keyword> {} </keyword>", type_name).unwrap();
-            },
-            Token::Identifier(class_name) => {
-                writeln!(self.writer, "<identifier> {} </identifier>", class_name).unwrap();
-            },
-            t => {
-                panic!("type expected, found {}", t);
-            }
-        }
-    }
-
     pub fn compile_let(&mut self) { unimplemented!(); }
     pub fn compile_while(&mut self) { unimplemented!(); }
     pub fn compile_return(&mut self) { unimplemented!(); }
