@@ -191,11 +191,7 @@ impl Tokenizer {
     }
 
     pub fn peek_next_token(&self) -> Option<&Token> {
-        if self.tokens.len() >= 1 {
-            Some(&self.tokens[self.tokens.len() - 1])
-        } else {
-            None
-        }
+        self.tokens.last()
     }
 
     pub fn keyword(&self) -> Option<Keyword> {
