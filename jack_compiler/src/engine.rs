@@ -264,7 +264,7 @@ impl Engine {
             // '[' expression ']'
             self.compile_symbol_expect('[');
             self.compile_expression();
-            self.compile_symbol_expect(']')
+            self.compile_symbol_expect(']');
         }
         // '=' expression ';'
         self.compile_symbol_expect('=');
