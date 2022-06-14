@@ -52,3 +52,32 @@ impl fmt::Display for Keyword {
         }
     }
 }
+
+impl FromStr for Keyword {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let kw = match s {
+            "class" => Ok(Keyword::Class),
+            "method" => Ok(Keyword::Method),
+            "function" => Ok(Keyword::Function),
+            "constructor" => Ok(Keyword::Constructor),
+            "int" => Ok(Keyword::Int),
+            "boolean" => Ok(Keyword::Boolean),
+            "char" => Ok(Keyword::Char),
+            "void" => Ok(Keyword::Void),
+            "var" => Ok(Keyword::Var),
+            "static" => Ok(Keyword::Static),
+            "field" => Ok(Keyword::Field),
+            "let" => Ok(Keyword::Let),
+            "do" => Ok(Keyword::Do),
+            "if" => Ok(Keyword::If),
+            "else" => Ok(Keyword::Else),
+            "while" => Ok(Keyword::While),
+            "return" => Ok(Keyword::Return),
+            "true" => Ok(Keyword::True),
+            "false" => Ok(Keyword::False),
+            "null" => Ok(Keyword::Null),
+            "this" => Ok(Keyword::This),
+            _ => Err("bad keyword");
+        }
+    }
+}
