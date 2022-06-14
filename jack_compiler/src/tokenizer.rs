@@ -2,7 +2,8 @@ use std::io::{Read, BufRead, BufReader};
 use std::io::ErrorKind;
 use std::fs::File;
 use std::collections::HashSet;
-use crate::keyword::*
+use std::str::FromStr;
+use crate::keyword::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Token {
@@ -26,11 +27,13 @@ impl Tokenizer {
             '+', '-', '*', '/', '&', '|', '~',
             '<', '>', '=', '.', ',', ';'
         ]);
+        /*
         let keyword_set = HashSet::from([
             "class", "constructor", "function", "method", "field", "static",
             "var", "int", "char", "boolean", "void", "true", "false", "null",
             "this", "let", "do", "if", "else", "while", "return"
         ]);
+        */
 
         let mut tokens = vec![];
         let mut reader = BufReader::new(f);
@@ -127,11 +130,14 @@ impl Tokenizer {
                             }
                             reader.consume(chars.len()-1);
 
-                            let word = String::from_utf8(chars).unwrap();
-                            if keyword_set.contains(word.as_str()) {
-                                tokens.push(Token::Keyword(word));
-                            } else {
-                                tokens.push(Token::Identifier(word));
+                            let word = std::str::from_utf8(&chars).unwrap();
+                            match Keyword::from_str(word) {
+                                Ok(kw) => {
+                                    tokens.push(Token::Keyword(kw));
+                                },
+                                Err(_) => {
+                                    tokens.push(Token::Identifier(word.to_string()));
+                                }
                             }
                         },
                         _ => { panic!("invalid byte appeared while tokenizing: {:0x}", ch[0]); }
@@ -158,22 +164,18 @@ impl Tokenizer {
         !self.tokens.is_empty()
     }
 
-    pub fn advance(&mut self) {
-        self.current_token = self.tokens.pop().unwrap_or(Token::Empty());
-    }
-
-    pub fn token_type(&self) -> Token {
-        self.current_token.clone()
+    pub fn get_next_token(&mut self) -> Token {
+        self.tokens.pop().unwrap_or(Token::Empty())
     }
 
     pub fn peek_next_token(&self) -> Option<&Token> {
         self.tokens.last()
     }
-
+/*
     pub fn keyword(&self) -> Option<Keyword> {
         match &self.current_token {
             Token::Keyword(kw) => {
-                match kw.as_str() {
+                match kw.to_string().as_str() {
                     "class"         => Some(Keyword::Class),
                     "constructor"   => Some(Keyword::Constructor),
                     "function"      => Some(Keyword::Function),
@@ -229,6 +231,7 @@ impl Tokenizer {
             _ => None
         }
     }
+*/
 }
 
 #[cfg(test)]
@@ -269,8 +272,7 @@ mod tests {
             // export xml
             writeln!(w, "<tokens>").unwrap();
             while t.has_more_tokens() {
-                t.advance();
-                match t.token_type() {
+                match t.get_next_token() {
                     Token::Keyword(s) => {
                         writeln!(w, "<keyword> {} </keyword>", s).unwrap();
                     },
