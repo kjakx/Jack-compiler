@@ -360,19 +360,22 @@ impl Engine {
                 self.compile_keyword();
             },
             &Token::Identifier(_) => {
-                // varName | subroutineCall | (className | varName)
-                self.compile_identifier();
-                match self.tokenizer.peek_next_token().unwrap() {
+                match self.tokenizer.peek_2nd_next_token().unwrap() {
                     &Token::Symbol('[') => {
-                        // '[' expression ']'
+                        // varName '[' expression ']'
+                        self.compile_identifier();
                         self.compile_symbol_expect('[');
                         self.compile_expression();
                         self.compile_symbol_expect(']');
                     },
                     &Token::Symbol('(' | '.') => {
+                        // subroutineCall
                         self.compile_subroutine_call();
                     },
-                    _ => ()
+                    _ => {
+                        // varName
+                        self.compile_identifier();
+                    }
                 }
             },
             &Token::Symbol('-' | '~') => {
@@ -381,9 +384,9 @@ impl Engine {
                 self.compile_term();
             },
             &Token::Symbol('(') => {
-                // '(' expressionList ')'
+                // '(' expression ')'
                 self.compile_symbol_expect('(');
-                self.compile_expression_list();
+                self.compile_expression();
                 self.compile_symbol_expect(')');
             },
             t => {
@@ -469,7 +472,12 @@ impl Engine {
     fn compile_symbol(&mut self) {
         match self.tokenizer.get_next_token() {
             Token::Symbol(sym) => {
-                writeln!(self.writer, "<symbol> {} </symbol>", sym).unwrap();
+                match sym {
+                    '&' => { writeln!(self.writer, "<symbol> &amp; </symbol>").unwrap(); },
+                    '<' => { writeln!(self.writer, "<symbol> &lt; </symbol>").unwrap(); },
+                    '>' => { writeln!(self.writer, "<symbol> &gt; </symbol>").unwrap(); },
+                    _   => { writeln!(self.writer, "<symbol> {} </symbol>", sym).unwrap(); }
+                }
             },
             t => {
                 panic!("symbol expected, found {:?}", t);
@@ -531,6 +539,49 @@ mod tests {
                     let input_filename = f.path().to_string_lossy().into_owned();
                     let output_filename = f.path().with_extension("xml").to_string_lossy().into_owned();
                     filename_pairs_in_out.push((input_filename, output_filename));
+                }
+            }
+        }
+
+        // compile *.jack, export *.xml, and compare with *.xml.org
+        for (fin, fout) in filename_pairs_in_out.iter() {
+            // tokenize
+            let input_file = File::open(fin).expect("cannot open input file");
+            let mut t = Tokenizer::new(input_file);
+            
+            // compile
+            let output_file = File::create(fout).expect("cannot open output file");
+            let mut e = Engine::new(t, output_file);
+            e.compile();
+
+            // compare two files
+            let forg = Path::new(fout).with_extension("xml.org").to_string_lossy().into_owned();
+            let diff_status = Command::new("diff").args(["-b", "-u", "-w", &fout, &forg]).status().expect("failed to execute process");
+            assert!(diff_status.success());
+        }
+    }
+
+    #[test]
+    fn test_expression_case() {
+        use super::*;
+        use std::path::Path;
+        use std::fs::File;
+        use std::io::{BufWriter, Write};
+        use std::process::Command;
+        use crate::tokenizer::*;
+
+        // pair list of full path of *.jack and *.xml files
+        let mut filename_pairs_in_out = vec![]; 
+        let square_path = Path::new("/workspace/Jack-compiler/jack_compiler/jack/Square");
+        let array_test_path = Path::new("/workspace/Jack-compiler/jack_compiler/jack/ArrayTest");
+        for d in [square_path, array_test_path].into_iter() {
+            for f in d.read_dir().expect("read_dir call failed") {
+                if let Ok(f) = f {
+                    if f.path().extension().unwrap() == "jack" {
+                        let input_filename = f.path().to_string_lossy().into_owned();
+                        let output_filename = f.path().with_extension("xml").to_string_lossy().into_owned();
+                        filename_pairs_in_out.push((input_filename, output_filename));
+                    }
                 }
             }
         }
