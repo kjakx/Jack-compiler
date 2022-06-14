@@ -357,7 +357,7 @@ impl Engine {
                 'expression loop {
                     match self.tokenizer.peek_next_token() {
                         &Token::Symbol(_ @ ',') => {
-                            compile_symbol();
+                            self.compile_symbol();
                         },
                         _ => { break 'expression; }
                     }
