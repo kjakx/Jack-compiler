@@ -171,6 +171,13 @@ impl Tokenizer {
     pub fn peek_next_token(&self) -> Option<&Token> {
         self.tokens.last()
     }
+
+    pub fn peek_2nd_next_token(&self) -> Option<&Token> {
+        match self.tokens.len() {
+            n if n >= 2 => Some(&self.tokens[n-2]),
+                      _ => None
+        }
+    }
 /*
     pub fn keyword(&self) -> Option<Keyword> {
         match &self.current_token {
