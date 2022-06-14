@@ -27,13 +27,6 @@ impl Tokenizer {
             '+', '-', '*', '/', '&', '|', '~',
             '<', '>', '=', '.', ',', ';'
         ]);
-        /*
-        let keyword_set = HashSet::from([
-            "class", "constructor", "function", "method", "field", "static",
-            "var", "int", "char", "boolean", "void", "true", "false", "null",
-            "this", "let", "do", "if", "else", "while", "return"
-        ]);
-        */
 
         let mut tokens = vec![];
         let mut reader = BufReader::new(f);
@@ -178,67 +171,6 @@ impl Tokenizer {
                       _ => None
         }
     }
-/*
-    pub fn keyword(&self) -> Option<Keyword> {
-        match &self.current_token {
-            Token::Keyword(kw) => {
-                match kw.to_string().as_str() {
-                    "class"         => Some(Keyword::Class),
-                    "constructor"   => Some(Keyword::Constructor),
-                    "function"      => Some(Keyword::Function),
-                    "method"        => Some(Keyword::Method),
-                    "field"         => Some(Keyword::Field),
-                    "static"        => Some(Keyword::Static),
-                    "var"           => Some(Keyword::Var),
-                    "int"           => Some(Keyword::Int),
-                    "char"          => Some(Keyword::Char),
-                    "boolean"       => Some(Keyword::Boolean),
-                    "void"          => Some(Keyword::Void),
-                    "true"          => Some(Keyword::True),
-                    "false"         => Some(Keyword::False),
-                    "null"          => Some(Keyword::Null),
-                    "this"          => Some(Keyword::This),
-                    "let"           => Some(Keyword::Let),
-                    "do"            => Some(Keyword::Do),
-                    "if"            => Some(Keyword::If),
-                    "else"          => Some(Keyword::Else),
-                    "while"         => Some(Keyword::While),
-                    "return"        => Some(Keyword::Return),
-                    _               => panic!("invalid keyword detected: {}", kw)
-                }
-            },
-            _ => None
-        }
-    }
-
-    pub fn symbol(&self) -> Option<char> {
-        match &self.current_token {
-            Token::Symbol(sym) => Some(*sym),
-            _ => None
-        }
-    }
-
-    pub fn identifier(&self) -> Option<String> {
-        match &self.current_token {
-            Token::Identifier(ident) => Some(ident.to_string()),
-            _ => None
-        }
-    }
-
-    pub fn int_val(&self) -> Option<i16> {
-        match &self.current_token {
-            Token::IntConst(int_const) => Some(*int_const),
-            _ => None
-        }
-    }
-
-    pub fn string_val(&self) -> Option<String> {
-        match &self.current_token {
-            Token::StringConst(str_const) => Some(str_const.to_string()),
-            _ => None
-        }
-    }
-*/
 }
 
 #[cfg(test)]
