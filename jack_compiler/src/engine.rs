@@ -344,7 +344,55 @@ impl Engine {
         writeln!(self.writer, "</expression>").unwrap();
     }
 
-    pub fn compile_term(&mut self) { unimplemented!(); }
+    pub fn compile_term(&mut self) {
+        writeln!(self.writer, "<term>").unwrap();
+        match self.tokenizer.peek_next_token() {
+            &Token::IntConst => {
+                self.compile_integer_constant();
+            },
+            &Token::StringConst => {
+                self.compile_string_constant();
+            },
+            &Token::Keyword(kw_const @ "true" | "false" | "null" | "this") => {
+                self.compile_keyword();
+            },
+            &Token::Identifier => {
+                // varName | subroutineCall | (className | varName)
+                self.compile_identifier();
+                match self.tokenizer.peek_next_token() {
+                    &Token::Symbol(_ @ '[') => {
+                        // '[' expression ']'
+                        self.compile_symbol_expect('[');
+                        self.compile_expression();
+                        self.compile_symbol_expect(']');
+                    },
+                    &Token::Symbol(_ @ '(' | '.') => {
+                        self.compile_subroutine_call();
+                    },
+                    _ => ()
+                }
+            },
+            &Token::Symbol(sym @ '-' | '~' | '(') => {
+                match sym {
+                    '-' | '~' => {
+                        // unaryOp term
+                        self.compile_symbol();
+                        self.compile_term();
+                    },
+                    '(' => {
+                        // '(' expressionList ')'
+                        self.compile_symbol_expect('(');
+                        self.compile_expression_list();
+                        self.compile_symbol_expect(')');
+                    }
+                }
+            },
+            t => {
+                panic!("unexpected token while parsing term: {}", t);
+            }
+        }
+        writeln!(self.writer, "</term>").unwrap();
+    }
 
     pub fn compile_expression_list(&mut self) {
         writeln!(self.writer, "<expressionList>").unwrap();
