@@ -2,40 +2,16 @@ use std::io::{Read, BufRead, BufReader};
 use std::io::ErrorKind;
 use std::fs::File;
 use std::collections::HashSet;
+use crate::keyword::*
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Token {
     Empty(),
-    Keyword(String),
+    Keyword(Keyword),
     Symbol(char),
     Identifier(String),
     IntConst(i16),
     StringConst(String),
-}
-
-#[derive(Debug, PartialEq)]
-pub enum Keyword {
-    Class,
-    Method,
-    Function,
-    Constructor,
-    Int,
-    Boolean,
-    Char,
-    Void,
-    Var,
-    Static,
-    Field,
-    Let,
-    Do,
-    If,
-    Else,
-    While,
-    Return,
-    True,
-    False,
-    Null,
-    This,
 }
 
 pub struct Tokenizer {
