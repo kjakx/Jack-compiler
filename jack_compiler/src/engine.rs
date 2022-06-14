@@ -518,3 +518,46 @@ impl Engine {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn test_no_expression_case() {
+        use super::*;
+        use std::path::Path;
+        use std::fs::File;
+        use std::io::{BufWriter, Write};
+        use std::process::Command;
+        use crate::tokenizer::*;
+
+        // pair list of full path of *.jack and *.xml files
+        let mut filename_pairs_in_out = vec![]; 
+        let jack_src_path = Path::new("/workspace/Jack-compiler/jack_compiler/jack/ExpressionLessSquare");
+        for f in jack_src_path.read_dir().expect("read_dir call failed") {
+            if let Ok(f) = f {
+                if f.path().extension().unwrap() == "jack" {
+                    let input_filename = f.path().to_string_lossy().into_owned();
+                    let output_filename = f.path().with_extension("xml").to_string_lossy().into_owned();
+                    filename_pairs_in_out.push((input_filename, output_filename));
+                }
+            }
+        }
+
+        // compile *.jack, export *.xml, and compare with *.xml.org
+        for (fin, fout) in filename_pairs_in_out.iter() {
+            // tokenize
+            let input_file = File::open(fin).expect("cannot open input file");
+            let mut t = Tokenizer::new(input_file);
+            
+            // compile
+            let output_file = File::create(fout).expect("cannot open output file");
+            let e = Engine::new(t, output_file);
+            e.compile();
+
+            // compare two files
+            let forg = Path::new(fout).with_extension("xml.org").to_string_lossy().into_owned();
+            let diff_status = Command::new("diff").args(["-b", "-u", &fout, &forg]).status().expect("failed to execute process");
+            assert!(diff_status.success());
+        }
+    }
+}
