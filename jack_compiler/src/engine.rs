@@ -375,7 +375,7 @@ impl Engine {
         // ('.' subroutineName)?
         match self.tokenizer.peek_next_token() {
             &Token::Symbol(_ @ '.') => {
-                self.compile_symbol_expect('.');
+                self.compile_symbol();
                 // subroutineName
                 self.compile_identifier();
             },
