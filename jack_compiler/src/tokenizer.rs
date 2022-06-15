@@ -1,15 +1,15 @@
 use std::io::{Read, BufRead, BufReader};
 use std::io::ErrorKind;
 use std::fs::File;
-use std::collections::HashSet;
 use std::str::FromStr;
 use crate::keyword::*;
+use crate::symbol::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Token {
     Empty(),
     Keyword(Keyword),
-    Symbol(char),
+    Symbol(Symbol),
     Identifier(String),
     IntConst(i16),
     StringConst(String),
@@ -17,17 +17,10 @@ pub enum Token {
 
 pub struct Tokenizer {
     pub tokens: Vec<Token>,
-    current_token: Token,
 }
 
 impl Tokenizer {
     pub fn new(f: File) -> Self {
-        let symbol_set = HashSet::from([
-            '{', '}', '(', ')', '[', ']',
-            '+', '-', '*', '/', '&', '|', '~',
-            '<', '>', '=', '.', ',', ';'
-        ]);
-
         let mut tokens = vec![];
         let mut reader = BufReader::new(f);
         'tokenize: loop {
@@ -38,46 +31,8 @@ impl Tokenizer {
                         // skip newline and ascii whitespace
                         b'\n' => { continue 'tokenize; },
                         c if c.is_ascii_whitespace() => { continue 'tokenize; },
-                        // if a symbol, it is a symbol token or a comment.
-                        c if symbol_set.contains(&char::from_u32(c as u32).unwrap()) => {
-                            match c {
-                                // If c is a /(slash), the next byte should be checked.
-                                b'/' => {
-                                    if let Ok(buf) = reader.fill_buf() { // TODO: I need more efficient way to look ahead a buffer...
-                                        match buf[0] {
-                                            // If / or *, it is followed by a comment, so skip it.
-                                            b'/' => { // one line comment
-                                                reader.consume(1);
-                                                let mut comment = vec![];
-                                                reader.read_until(b'\n', &mut comment).unwrap();
-                                            },
-                                            b'*' => {
-                                                reader.consume(1);
-                                                let mut comment = vec![];
-                                                while let Ok(_) = reader.read_until(b'/', &mut comment) {
-                                                    if comment.len() >= 2 && comment[comment.len()-2] == b'*' {
-                                                        break;
-                                                    }
-                                                }
-                                            },
-                                            _ => {
-                                                // If not a comment, the slash is a symbol token.
-                                                tokens.push(Token::Symbol(char::from_u32(ch[0] as u32).unwrap()));
-                                            }
-                                        }
-                                    }
-                                },
-                                // If the other symbol, it can immediately be added to tokens as a symbol.
-                                _ => {
-                                    tokens.push(Token::Symbol(char::from_u32(c as u32).unwrap()));
-                                }
-                            }
-                        },
                         // If a number, it is an integerConstant. Read until the end of the number.
-                        b'0' => {
-                            tokens.push(Token::IntConst((ch[0] - b'0') as i16));
-                        },
-                        b'1'..=b'9' => {
+                        b'0'..=b'9' => {
                             let mut digits = vec![ch[0]];
                             if let Ok(buf) = reader.fill_buf() {
                                 for d in buf.iter() {
@@ -133,13 +88,54 @@ impl Tokenizer {
                                 }
                             }
                         },
-                        _ => { panic!("invalid byte appeared while tokenizing: {:0x}", ch[0]); }
+                        // if a symbol, it is a symbol token or a comment.
+                        c => {
+                            match Symbol::from_u8(c) {
+                                Ok(sym) => {
+                                    match sym {
+                                        // If c is a /(slash), the next byte should be checked.
+                                        Symbol::Slash => {
+                                            if let Ok(buf) = reader.fill_buf() { // TODO: I need more efficient way to look ahead a buffer...
+                                                match buf[0] {
+                                                    // If / or *, it is followed by a comment, so skip it.
+                                                    b'/' => { // one line comment
+                                                        reader.consume(1);
+                                                        let mut comment = vec![];
+                                                        reader.read_until(b'\n', &mut comment).unwrap();
+                                                    },
+                                                    b'*' => {
+                                                        reader.consume(1);
+                                                        let mut comment = vec![];
+                                                        while let Ok(_) = reader.read_until(b'/', &mut comment) {
+                                                            if comment.len() >= 2 && comment[comment.len()-2] == b'*' {
+                                                                break;
+                                                            }
+                                                        }
+                                                    },
+                                                    _ => {
+                                                        // If not a comment, the slash is a symbol token.
+                                                        tokens.push(Token::Symbol(Symbol::from_u8(c).unwrap()));
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        // If the other symbol, it can immediately be added to tokens as a symbol.
+                                        _ => {
+                                            tokens.push(Token::Symbol(Symbol::from_u8(c).unwrap()));
+                                        }
+                                    }
+                                },
+                                Err(e) => {
+                                    panic!("unexpected error occurred while tokenizing: {}", e);
+                                }
+                            }
+                        }
                     }
                 },
                 Err(e) => {
                     match e.kind() {
                         ErrorKind::UnexpectedEof => { break 'tokenize; }, // reached EOF
-                        _ => { panic!("unexpected error occurred while tokenizing: {}", e); }
+                        _ => panic!("unexpected error occurred while tokenizing: {}", e),
                     }
                 }
             }
@@ -149,7 +145,6 @@ impl Tokenizer {
 
         Tokenizer {
             tokens: tokens,
-            current_token: Token::Empty(),
         }
     }
 
@@ -212,24 +207,11 @@ mod tests {
             writeln!(w, "<tokens>").unwrap();
             while t.has_more_tokens() {
                 match t.get_next_token() {
-                    Token::Keyword(s) => {
-                        writeln!(w, "<keyword> {} </keyword>", s).unwrap();
+                    Token::Keyword(kw) => {
+                        writeln!(w, "<keyword> {} </keyword>", kw).unwrap();
                     },
-                    Token::Symbol(c) => {
-                        match c {
-                            '&' => {
-                                writeln!(w, "<symbol> &amp; </symbol>").unwrap();
-                            },
-                            '<' => {
-                                writeln!(w, "<symbol> &lt; </symbol>").unwrap();
-                            },
-                            '>' => {
-                                writeln!(w, "<symbol> &gt; </symbol>").unwrap();
-                            },
-                            c => {
-                                writeln!(w, "<symbol> {} </symbol>", c).unwrap();
-                            }
-                        }
+                    Token::Symbol(sym) => {
+                        writeln!(w, "<symbol> {} </symbol>", sym).unwrap();
                     },
                     Token::Identifier(s) => {
                         writeln!(w, "<identifier> {} </identifier>", s).unwrap();
