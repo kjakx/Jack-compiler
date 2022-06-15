@@ -2,6 +2,7 @@ use std::io::{BufWriter, Write};
 use std::fs::File;
 use crate::tokenizer::*;
 use crate::keyword::*;
+use crate::symbol::*;
 
 pub struct Engine {
     tokenizer: Tokenizer,
@@ -26,7 +27,7 @@ impl Engine {
         // 'class' className '{'
         self.compile_keyword_expect(Keyword::Class);
         self.compile_identifier();
-        self.compile_symbol_expect('{');
+        self.compile_symbol_expect(Symbol::BraceL);
         // classVarDec*
         'classVarDec: loop {
             match self.tokenizer.peek_next_token().unwrap() {
@@ -50,7 +51,7 @@ impl Engine {
             }
         }
         // '}'
-        self.compile_symbol_expect('}');
+        self.compile_symbol_expect(Symbol::BraceR);
         // finish parsing class
         writeln!(self.writer, "</class>").unwrap();
     }
@@ -84,14 +85,14 @@ impl Engine {
             self.compile_identifier();
             // ','
             match self.tokenizer.peek_next_token().unwrap() {
-                &Token::Symbol(',') => {
+                &Token::Symbol(Symbol::Comma) => {
                     self.compile_symbol();
                 },
                 _ => { break 'varName; }
             }
         }
         // ';'
-        self.compile_symbol_expect(';');
+        self.compile_symbol_expect(Symbol::SemiColon);
         writeln!(self.writer, "</classVarDec>").unwrap();
     }
     
@@ -123,9 +124,9 @@ impl Engine {
         }
         // subroutineName '(' parameterList ')'
         self.compile_identifier();
-        self.compile_symbol_expect('(');
+        self.compile_symbol_expect(Symbol::ParenL);
         self.compile_parameter_list();
-        self.compile_symbol_expect(')');
+        self.compile_symbol_expect(Symbol::ParenR);
         // subroutineBody
         self.compile_subroutine_body();
         writeln!(self.writer, "</subroutineDec>").unwrap();
@@ -134,7 +135,7 @@ impl Engine {
     pub fn compile_subroutine_body(&mut self) {
         writeln!(self.writer, "<subroutineBody>").unwrap();
         // '{'
-        self.compile_symbol_expect('{');
+        self.compile_symbol_expect(Symbol::BraceL);
         // varDec*
         'varDec: loop {
             match self.tokenizer.peek_next_token().unwrap() {
@@ -147,7 +148,7 @@ impl Engine {
         // statements
         self.compile_statements();
         // '}'
-        self.compile_symbol_expect('}');
+        self.compile_symbol_expect(Symbol::BraceR);
         writeln!(self.writer, "</subroutineBody>").unwrap();
     }
 
@@ -171,7 +172,7 @@ impl Engine {
             self.compile_identifier();
             // ','
             match self.tokenizer.peek_next_token().unwrap() {
-                &Token::Symbol(',') => {
+                &Token::Symbol(Symbol::Comma) => {
                     self.compile_symbol();
                 },
                 _ => {
@@ -204,14 +205,14 @@ impl Engine {
             self.compile_identifier();
             // ','
             match self.tokenizer.peek_next_token().unwrap() {
-                &Token::Symbol(',') => {
+                &Token::Symbol(Symbol::Comma) => {
                     self.compile_symbol();
                 },
                 _ => { break 'varName; }
             }
         }
         // ';'
-        self.compile_symbol_expect(';');
+        self.compile_symbol_expect(Symbol::SemiColon);
         writeln!(self.writer, "</varDec>").unwrap();
     }
 
@@ -253,7 +254,7 @@ impl Engine {
         // 'do' subroutineCall ';'
         self.compile_keyword_expect(Keyword::Do);
         self.compile_subroutine_call();
-        self.compile_symbol_expect(';');
+        self.compile_symbol_expect(Symbol::SemiColon);
         writeln!(self.writer, "</doStatement>").unwrap();
     }
 
@@ -263,16 +264,16 @@ impl Engine {
         self.compile_keyword_expect(Keyword::Let);
         self.compile_identifier();
         // ('[' expression ']')?
-        if let &Token::Symbol('[') = self.tokenizer.peek_next_token().unwrap() {
+        if let &Token::Symbol(Symbol::SqParL) = self.tokenizer.peek_next_token().unwrap() {
             // '[' expression ']'
-            self.compile_symbol_expect('[');
+            self.compile_symbol_expect(Symbol::SqParL);
             self.compile_expression();
-            self.compile_symbol_expect(']');
+            self.compile_symbol_expect(Symbol::SqParR);
         }
         // '=' expression ';'
-        self.compile_symbol_expect('=');
+        self.compile_symbol_expect(Symbol::Equal);
         self.compile_expression();
-        self.compile_symbol_expect(';');
+        self.compile_symbol_expect(Symbol::SemiColon);
         writeln!(self.writer, "</letStatement>").unwrap();
     }
 
@@ -280,13 +281,13 @@ impl Engine {
         writeln!(self.writer, "<whileStatement>").unwrap();
         // 'while' '(' expression ')'
         self.compile_keyword_expect(Keyword::While);
-        self.compile_symbol_expect('(');
+        self.compile_symbol_expect(Symbol::ParenL);
         self.compile_expression();
-        self.compile_symbol_expect(')');
+        self.compile_symbol_expect(Symbol::ParenR);
         // '{' statements '}'
-        self.compile_symbol_expect('{');
+        self.compile_symbol_expect(Symbol::BraceL);
         self.compile_statements();
-        self.compile_symbol_expect('}');
+        self.compile_symbol_expect(Symbol::BraceR);
         writeln!(self.writer, "</whileStatement>").unwrap();
     }
 
@@ -296,13 +297,13 @@ impl Engine {
         self.compile_keyword_expect(Keyword::Return);
         // expression?
         match self.tokenizer.peek_next_token().unwrap() {
-            &Token::Symbol(';') => (),
+            &Token::Symbol(Symbol::SemiColon) => (),
             _ => {
                 self.compile_expression();
             }
         }
         // ';'
-        self.compile_symbol_expect(';');
+        self.compile_symbol_expect(Symbol::SemiColon);
         writeln!(self.writer, "</returnStatement>").unwrap();
     }
 
@@ -310,20 +311,20 @@ impl Engine {
         writeln!(self.writer, "<ifStatement>").unwrap();
         // 'if' '(' expression ')'
         self.compile_keyword_expect(Keyword::If);
-        self.compile_symbol_expect('(');
+        self.compile_symbol_expect(Symbol::ParenL);
         self.compile_expression();
-        self.compile_symbol_expect(')');
+        self.compile_symbol_expect(Symbol::ParenR);
         // '{' statements '}'
-        self.compile_symbol_expect('{');
+        self.compile_symbol_expect(Symbol::BraceL);
         self.compile_statements();
-        self.compile_symbol_expect('}');
+        self.compile_symbol_expect(Symbol::BraceR);
         // ('else' '{' statements '}')?
         if let &Token::Keyword(Keyword::Else) = self.tokenizer.peek_next_token().unwrap() {
             // 'else' '{' statements '}'
             self.compile_keyword_expect(Keyword::Else);
-            self.compile_symbol_expect('{');
+            self.compile_symbol_expect(Symbol::BraceL);
             self.compile_statements();
-            self.compile_symbol_expect('}');
+            self.compile_symbol_expect(Symbol::BraceR);
         }
         writeln!(self.writer, "</ifStatement>").unwrap();
     }
@@ -335,7 +336,10 @@ impl Engine {
         // (op term)*
         'term: loop {
             match self.tokenizer.peek_next_token().unwrap() {
-                Token::Symbol('+' | '-' | '*' | '/' | '&' | '|' | '<' | '>' | '=') => {
+                Token::Symbol(
+                    Symbol::Plus | Symbol::Minus | Symbol::Asterisk | Symbol::Slash |
+                    Symbol::And  | Symbol::Or    | Symbol::LessThan | Symbol::GreaterThan | Symbol::Equal
+                ) => {
                     self.compile_symbol();
                 },
                 _ => {
@@ -361,14 +365,14 @@ impl Engine {
             },
             &Token::Identifier(_) => {
                 match self.tokenizer.peek_2nd_next_token().unwrap() {
-                    &Token::Symbol('[') => {
+                    &Token::Symbol(Symbol::SqParL) => {
                         // varName '[' expression ']'
                         self.compile_identifier();
-                        self.compile_symbol_expect('[');
+                        self.compile_symbol_expect(Symbol::SqParL);
                         self.compile_expression();
-                        self.compile_symbol_expect(']');
+                        self.compile_symbol_expect(Symbol::SqParR);
                     },
-                    &Token::Symbol('(' | '.') => {
+                    &Token::Symbol(Symbol::ParenL | Symbol::Dot) => {
                         // subroutineCall
                         self.compile_subroutine_call();
                     },
@@ -378,16 +382,16 @@ impl Engine {
                     }
                 }
             },
-            &Token::Symbol('-' | '~') => {
+            &Token::Symbol(Symbol::Minus | Symbol::Not) => {
                 // unaryOp term
                 self.compile_symbol();
                 self.compile_term();
             },
-            &Token::Symbol('(') => {
+            &Token::Symbol(Symbol::ParenL) => {
                 // '(' expression ')'
-                self.compile_symbol_expect('(');
+                self.compile_symbol_expect(Symbol::ParenL);
                 self.compile_expression();
-                self.compile_symbol_expect(')');
+                self.compile_symbol_expect(Symbol::ParenR);
             },
             t => {
                 panic!("unexpected token while parsing term: {:?}", t);
@@ -400,13 +404,13 @@ impl Engine {
         writeln!(self.writer, "<expressionList>").unwrap();
         // (expression (',' expression)* )?
         match self.tokenizer.peek_next_token().unwrap() {
-            &Token::Symbol(')') => (),
+            &Token::Symbol(Symbol::ParenR) => (),
             _ => {
                 // expression (',' expression)*
                 self.compile_expression();
                 'expression: loop {
                     match self.tokenizer.peek_next_token().unwrap() {
-                        &Token::Symbol(',') => {
+                        &Token::Symbol(Symbol::Comma) => {
                             self.compile_symbol();
                         },
                         _ => { break 'expression; }
@@ -423,7 +427,7 @@ impl Engine {
         self.compile_identifier();
         // ('.' subroutineName)?
         match self.tokenizer.peek_next_token().unwrap() {
-            &Token::Symbol('.') => {
+            &Token::Symbol(Symbol::Dot) => {
                 self.compile_symbol();
                 // subroutineName
                 self.compile_identifier();
@@ -431,9 +435,9 @@ impl Engine {
             _ => ()
         } 
         // '(' expressionList ')'
-        self.compile_symbol_expect('(');
+        self.compile_symbol_expect(Symbol::ParenL);
         self.compile_expression_list();
-        self.compile_symbol_expect(')');
+        self.compile_symbol_expect(Symbol::ParenR);
     }
 
     fn compile_keyword_expect(&mut self, kw: Keyword) {
@@ -458,7 +462,7 @@ impl Engine {
         }
     }
 
-    fn compile_symbol_expect(&mut self, sym: char) {
+    fn compile_symbol_expect(&mut self, sym: Symbol) {
         match self.tokenizer.peek_next_token().unwrap() {
             &Token::Symbol(sym) => {
                 self.compile_symbol();
@@ -473,9 +477,9 @@ impl Engine {
         match self.tokenizer.get_next_token() {
             Token::Symbol(sym) => {
                 match sym {
-                    '&' => { writeln!(self.writer, "<symbol> &amp; </symbol>").unwrap(); },
-                    '<' => { writeln!(self.writer, "<symbol> &lt; </symbol>").unwrap(); },
-                    '>' => { writeln!(self.writer, "<symbol> &gt; </symbol>").unwrap(); },
+                    Symbol::And => { writeln!(self.writer, "<symbol> &amp; </symbol>").unwrap(); },
+                    Symbol::LessThan => { writeln!(self.writer, "<symbol> &lt; </symbol>").unwrap(); },
+                    Symbol::GreaterThan => { writeln!(self.writer, "<symbol> &gt; </symbol>").unwrap(); },
                     _   => { writeln!(self.writer, "<symbol> {} </symbol>", sym).unwrap(); }
                 }
             },
