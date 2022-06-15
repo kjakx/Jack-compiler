@@ -62,7 +62,7 @@ impl fmt::Display for UndefinedSymbol {
 impl Symbol {
     type Err = UndefinedSymbol;
 
-    fn from_byte(b: u8) -> Result<Self, Self::Err> {
+    fn from_u8(b: u8) -> Result<Self, Self::Err> {
         match b {
             b"{" => Ok(Symbol::BraceL),
             b"}" => Ok(Symbol::BraceR),
@@ -83,7 +83,7 @@ impl Symbol {
             b"." => Ok(Symbol::Dot),
             b"," => Ok(Symbol::Comma),
             b";" => Ok(Symbol::SemiColon),
-              _  => Err(BadSymbolError),
+              _  => Err(UndefinedSymbol),
         }
     }
 }
