@@ -19,7 +19,7 @@ impl Engine {
     
     pub fn compile(&mut self) {
         self.compile_class();
-        self.writer.flush();
+        self.writer.flush().unwrap();
     }
 
     pub fn compile_class(&mut self) {
@@ -440,13 +440,18 @@ impl Engine {
         self.compile_symbol_expect(Symbol::ParenR);
     }
 
-    fn compile_keyword_expect(&mut self, kw: Keyword) {
+    fn compile_keyword_expect(&mut self, kw_expect: Keyword) {
         match self.tokenizer.peek_next_token().unwrap() {
-            &Token::Keyword(kw) => {
-                self.compile_keyword();
+            Token::Keyword(kw_next) => {
+                if *kw_next == kw_expect {
+                    self.compile_keyword();
+                }
+                else {
+                    panic!("{} expected, found {:?}", kw_expect, kw_next);
+                }
             },
             t => {
-                panic!("{} expected, found {:?}", kw, t);
+                panic!("Token::keyword expected, found {:?}", t);
             }
         }
     }
@@ -462,13 +467,18 @@ impl Engine {
         }
     }
 
-    fn compile_symbol_expect(&mut self, sym: Symbol) {
+    fn compile_symbol_expect(&mut self, sym_expect: Symbol) {
         match self.tokenizer.peek_next_token().unwrap() {
-            &Token::Symbol(sym) => {
-                self.compile_symbol();
+            Token::Symbol(sym_next) => {
+                if *sym_next == sym_expect {
+                    self.compile_symbol();
+                }
+                else {
+                    panic!("{} expected, found {:?}", sym_expect, sym_next);
+                }
             },
             t => {
-                panic!("'{}' expected, found {:?}", sym, t);
+                panic!("Token::Symbol expected, found {:?}", t);
             }
         }
     }
@@ -476,12 +486,7 @@ impl Engine {
     fn compile_symbol(&mut self) {
         match self.tokenizer.get_next_token() {
             Token::Symbol(sym) => {
-                match sym {
-                    Symbol::And => { writeln!(self.writer, "<symbol> &amp; </symbol>").unwrap(); },
-                    Symbol::LessThan => { writeln!(self.writer, "<symbol> &lt; </symbol>").unwrap(); },
-                    Symbol::GreaterThan => { writeln!(self.writer, "<symbol> &gt; </symbol>").unwrap(); },
-                    _   => { writeln!(self.writer, "<symbol> {} </symbol>", sym).unwrap(); }
-                }
+                writeln!(self.writer, "<symbol> {} </symbol>", sym).unwrap();
             },
             t => {
                 panic!("symbol expected, found {:?}", t);
