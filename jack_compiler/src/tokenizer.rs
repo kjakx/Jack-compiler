@@ -148,10 +148,6 @@ impl Tokenizer {
         }
     }
 
-    pub fn has_more_tokens(&self) -> bool {
-        !self.tokens.is_empty()
-    }
-
     pub fn get_next_token(&mut self) -> Token {
         self.tokens.pop().unwrap_or(Token::Empty())
     }
@@ -205,7 +201,7 @@ mod tests {
 
             // export xml
             writeln!(w, "<tokens>").unwrap();
-            while t.has_more_tokens() {
+            'export_xml: loop {
                 match t.get_next_token() {
                     Token::Keyword(kw) => {
                         writeln!(w, "<keyword> {} </keyword>", kw).unwrap();
@@ -222,7 +218,7 @@ mod tests {
                     Token::StringConst(s) => {
                         writeln!(w, "<stringConstant> {} </stringConstant>", s).unwrap();
                     },
-                    Token::Empty() => { unreachable!(); }
+                    Token::Empty() => { break 'export_xml; }
                 }
             }
             writeln!(w, "</tokens>").unwrap();
