@@ -92,20 +92,12 @@ impl fmt::Display for Command {
 
 pub struct VMWriter {
     writer: BufWriter<File>,
-    filename: String,
-    function_name: String,
-    line_count: usize,
-    call_count: usize,
 }
 
 impl VMWriter {
     pub fn new(f: File) -> Self {
         VMWriter {
             writer: BufWriter::<File>::new(f),
-            filename: String::new(),
-            function_name: String::new(),
-            line_count: 0,
-            call_count: 0,
         }
     }
 
@@ -131,6 +123,18 @@ impl VMWriter {
 
     pub fn write_if(&mut self, label: &str) {
         writeln!(self.writer, "if-goto {}", label).unwrap();
+    }
+
+    pub fn write_call(&mut self, name: &str, n_args: i16) {
+        writeln!(self.writer, "call {} {}", name, n_args).unwrap();
+    }
+
+    pub fn write_function(&mut self, name: &str, n_locals: i16) {
+        writeln!(self.writer, "function {} {}", name, n_locals).unwrap();
+    }
+
+    pub fn write_return(&mut self) {
+        writeln!(self.writer, "return");
     }
 
     pub fn close(&mut self) {
