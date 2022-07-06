@@ -134,7 +134,7 @@ impl VMWriter {
     }
 
     pub fn write_return(&mut self) {
-        writeln!(self.writer, "return");
+        writeln!(self.writer, "return").unwrap();
     }
 
     pub fn close(&mut self) {
