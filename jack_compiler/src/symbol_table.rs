@@ -1,5 +1,13 @@
 use std::collections::HashMap;
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum VarType {
+    Int,
+    Char,
+    Boolean,
+    ClassName(String),
+}
+
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub enum VarKind {
     Static,
@@ -9,13 +17,13 @@ pub enum VarKind {
 }
 
 pub struct VarInfo {
-    var_type: &'static str,
+    var_type: VarType,
     kind: VarKind,
     index: usize,
 }
 
 impl VarInfo {
-    fn new(var_type: &'static str, kind: VarKind, index: usize) -> Self {
+    fn new(var_type: VarType, kind: VarKind, index: usize) -> Self {
         VarInfo {
             var_type,
             kind,
@@ -105,7 +113,7 @@ impl SymbolTable {
         self.cnt_sub.clear();
     }
 
-    pub fn define(&mut self, name: &'static str, var_type: &'static str, kind: VarKind) {
+    pub fn define(&mut self, name: &'static str, var_type: VarType, kind: VarKind) {
         match kind {
             VarKind::Static | VarKind::Field => {
                 self.tbl_cls.insert(name, VarInfo::new(var_type, kind, self.cnt_cls.get_count(kind)));
@@ -129,15 +137,15 @@ impl SymbolTable {
         }
     }
 
-    pub fn kind_of(&self, name: &str) -> Option<VarKind> {
+    pub fn kind_of(&self, name: &str) -> Option<&VarKind> {
         match self.tbl_sub.get(name) {
             Some(i) => {
-                Some(i.kind)
+                Some(&i.kind)
             },
             None => {
                 match self.tbl_cls.get(name) {
                     Some(j) => {
-                        Some(j.kind)
+                        Some(&j.kind)
                     },
                     None => {
                         None
@@ -147,15 +155,15 @@ impl SymbolTable {
         }
     }
 
-    pub fn type_of(&self, name: &str) -> Option<&str> {
+    pub fn type_of(&self, name: &str) -> Option<&VarType> {
         match self.tbl_sub.get(name) {
             Some(i) => {
-                Some(i.var_type)
+                Some(&i.var_type)
             },
             None => {
                 match self.tbl_cls.get(name) {
                     Some(j) => {
-                        Some(j.var_type)
+                        Some(&j.var_type)
                     },
                     None => {
                         None
@@ -165,15 +173,15 @@ impl SymbolTable {
         }
     }
 
-    pub fn index_of(&self, name: &str) -> Option<usize> {
+    pub fn index_of(&self, name: &str) -> Option<&usize> {
         match self.tbl_sub.get(name) {
             Some(i) => {
-                Some(i.index)
+                Some(&i.index)
             },
             None => {
                 match self.tbl_cls.get(name) {
                     Some(j) => {
-                        Some(j.index)
+                        Some(&j.index)
                     },
                     None => {
                         None
@@ -202,14 +210,14 @@ mod tests {
     #[test]
     fn test_define_symbols() {
         let mut test = SymbolTable::new();
-        test.define("test1", "boolean", VarKind::Var);
-        test.define("test2", "int", VarKind::Arg);
-        test.define("test3", "char", VarKind::Static);
-        test.define("test4", "int", VarKind::Field);
-        test.define("test5", "boolean", VarKind::Static);
-        assert_eq!(test.kind_of("test1"), Some(VarKind::Var));
-        assert_eq!(test.type_of("test2"), Some("int"));
-        assert_eq!(test.index_of("test5"), Some(1));
+        test.define("test1", VarType::Boolean, VarKind::Var);
+        test.define("test2", VarType::Int, VarKind::Arg);
+        test.define("test3", VarType::Char, VarKind::Static);
+        test.define("test4", VarType::Int, VarKind::Field);
+        test.define("test5", VarType::Boolean, VarKind::Static);
+        assert_eq!(test.kind_of("test1"), Some(&VarKind::Var));
+        assert_eq!(test.type_of("test2"), Some(&VarType::Int));
+        assert_eq!(test.index_of("test5"), Some(&1));
         assert_eq!(test.var_count(VarKind::Static), 2);
         assert_eq!(test.kind_of("ghost"), None);
     }
@@ -217,15 +225,15 @@ mod tests {
     #[test]
     fn test_start_subroutine() {
         let mut test = SymbolTable::new();
-        test.define("test1", "boolean", VarKind::Var);
-        test.define("test2", "int", VarKind::Arg);
-        test.define("test3", "char", VarKind::Static);
-        test.define("test4", "int", VarKind::Field);
-        test.define("test5", "boolean", VarKind::Static);
+        test.define("test1", VarType::Boolean, VarKind::Var);
+        test.define("test2", VarType::Int, VarKind::Arg);
+        test.define("test3", VarType::Char, VarKind::Static);
+        test.define("test4", VarType::Int, VarKind::Field);
+        test.define("test5", VarType::Boolean, VarKind::Static);
         test.start_subroutine();
         assert_eq!(test.kind_of("test1"), None);
         assert_eq!(test.type_of("test2"), None);
-        assert_eq!(test.index_of("test5"), Some(1));
+        assert_eq!(test.index_of("test5"), Some(&1));
         assert_eq!(test.var_count(VarKind::Static), 2);
         assert_eq!(test.var_count(VarKind::Field), 1);
         assert_eq!(test.var_count(VarKind::Var), 0);
