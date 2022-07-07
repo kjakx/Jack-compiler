@@ -92,8 +92,8 @@ impl VarCounter {
 }
 
 pub struct SymbolTable {
-    tbl_cls: HashMap<&'static str, VarInfo>,
-    tbl_sub: HashMap<&'static str, VarInfo>,
+    tbl_cls: HashMap<String, VarInfo>,
+    tbl_sub: HashMap<String, VarInfo>,
     cnt_cls: VarCounter,
     cnt_sub: VarCounter,
 }
@@ -101,8 +101,8 @@ pub struct SymbolTable {
 impl SymbolTable {
     pub fn new() -> Self {
         SymbolTable {
-            tbl_cls: HashMap::<&str, VarInfo>::new(),
-            tbl_sub: HashMap::<&str, VarInfo>::new(),
+            tbl_cls: HashMap::<String, VarInfo>::new(),
+            tbl_sub: HashMap::<String, VarInfo>::new(),
             cnt_cls: VarCounter::new(),
             cnt_sub: VarCounter::new(),
         }
@@ -113,14 +113,14 @@ impl SymbolTable {
         self.cnt_sub.clear();
     }
 
-    pub fn define(&mut self, name: &'static str, var_type: VarType, kind: VarKind) {
+    pub fn define(&mut self, name: &str, var_type: VarType, kind: VarKind) {
         match kind {
             VarKind::Static | VarKind::Field => {
-                self.tbl_cls.insert(name, VarInfo::new(var_type, kind, self.cnt_cls.get_count(kind)));
+                self.tbl_cls.insert(name.into(), VarInfo::new(var_type, kind, self.cnt_cls.get_count(kind)));
                 self.cnt_cls.count_up(kind);
             },
             VarKind::Arg | VarKind::Var => {
-                self.tbl_sub.insert(name, VarInfo::new(var_type, kind, self.cnt_sub.get_count(kind)));
+                self.tbl_sub.insert(name.into(), VarInfo::new(var_type, kind, self.cnt_sub.get_count(kind)));
                 self.cnt_sub.count_up(kind);
             }
         }
@@ -138,12 +138,12 @@ impl SymbolTable {
     }
 
     pub fn kind_of(&self, name: &str) -> Option<&VarKind> {
-        match self.tbl_sub.get(name) {
+        match self.tbl_sub.get(name.into()) {
             Some(i) => {
                 Some(&i.kind)
             },
             None => {
-                match self.tbl_cls.get(name) {
+                match self.tbl_cls.get(name.into()) {
                     Some(j) => {
                         Some(&j.kind)
                     },
@@ -156,12 +156,12 @@ impl SymbolTable {
     }
 
     pub fn type_of(&self, name: &str) -> Option<&VarType> {
-        match self.tbl_sub.get(name) {
+        match self.tbl_sub.get(name.into()) {
             Some(i) => {
                 Some(&i.var_type)
             },
             None => {
-                match self.tbl_cls.get(name) {
+                match self.tbl_cls.get(name.into()) {
                     Some(j) => {
                         Some(&j.var_type)
                     },
@@ -174,12 +174,12 @@ impl SymbolTable {
     }
 
     pub fn index_of(&self, name: &str) -> Option<&usize> {
-        match self.tbl_sub.get(name) {
+        match self.tbl_sub.get(name.into()) {
             Some(i) => {
                 Some(&i.index)
             },
             None => {
-                match self.tbl_cls.get(name) {
+                match self.tbl_cls.get(name.into()) {
                     Some(j) => {
                         Some(&j.index)
                     },
