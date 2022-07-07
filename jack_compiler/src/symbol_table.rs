@@ -1,11 +1,11 @@
 use std::collections::HashMap;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum VarType {
     Int,
     Char,
     Boolean,
-    ClassName(String),
+    ClassName,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -214,7 +214,7 @@ mod tests {
         test.define("test2", VarType::Int, VarKind::Arg);
         test.define("test3", VarType::Char, VarKind::Static);
         test.define("test4", VarType::Int, VarKind::Field);
-        test.define("test5", VarType::Boolean, VarKind::Static);
+        test.define("test5", VarType::ClassName, VarKind::Static);
         assert_eq!(test.kind_of("test1"), Some(&VarKind::Var));
         assert_eq!(test.type_of("test2"), Some(&VarType::Int));
         assert_eq!(test.index_of("test5"), Some(&1));
@@ -229,7 +229,7 @@ mod tests {
         test.define("test2", VarType::Int, VarKind::Arg);
         test.define("test3", VarType::Char, VarKind::Static);
         test.define("test4", VarType::Int, VarKind::Field);
-        test.define("test5", VarType::Boolean, VarKind::Static);
+        test.define("test5", VarType::ClassName, VarKind::Static);
         test.start_subroutine();
         assert_eq!(test.kind_of("test1"), None);
         assert_eq!(test.type_of("test2"), None);
