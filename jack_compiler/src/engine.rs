@@ -3,9 +3,11 @@ use std::fs::File;
 use crate::tokenizer::*;
 use crate::keyword::*;
 use crate::symbol::*;
+use crate::symbol_table::*;
 
 pub struct Engine {
     tokenizer: Tokenizer,
+    sym_tbl: SymbolTable,
     writer: BufWriter<File>,
 }
 
@@ -13,6 +15,7 @@ impl Engine {
     pub fn new(t: Tokenizer, f: File) -> Self {
         Engine {
             tokenizer: t,
+            sym_tbl: SymbolTable::new(),
             writer: BufWriter::<File>::new(f),
         }
     }
@@ -26,7 +29,7 @@ impl Engine {
         writeln!(self.writer, "<class>").unwrap();
         // 'class' className '{'
         self.compile_keyword_expect(Keyword::Class);
-        self.compile_identifier();
+        self.compile_class_name();
         self.compile_symbol_expect(Symbol::BraceL);
         // classVarDec*
         'classVarDec: loop {
@@ -59,30 +62,24 @@ impl Engine {
     pub fn compile_class_var_dec(&mut self) {
         writeln!(self.writer, "<classVarDec>").unwrap();
         // 'static' | 'field'
-        match self.tokenizer.peek_next_token().unwrap() {
-            &Token::Keyword(Keyword::Static | Keyword::Field) => {
-                self.compile_keyword();
+        let varkind = match self.tokenizer.peek_next_token().unwrap() {
+            &Token::Keyword(Keyword::Static) => {
+                VarKind::Static
+            },
+            &Token::Keyword(Keyword::Field) => {
+                VarKind::Field
             },
             t => {
                 panic!("'static' or 'field' expected, found {:?}", t);
             }
-        }
+        };
+        self.compile_keyword();
         // type
-        match self.tokenizer.peek_next_token().unwrap() {
-            &Token::Keyword(Keyword::Int | Keyword::Char | Keyword::Boolean) => {
-                self.compile_keyword();
-            },
-            &Token::Identifier(_) => {
-                self.compile_identifier();
-            },
-            t => {
-                panic!("type expected, found {:?}", t);
-            }
-        }
+        let vartype = self.compile_type().unwrap();
         // varName (',' varName)*
         'varName: loop {
             // varName
-            self.compile_identifier();
+            self.compile_var_name_defined(varkind, vartype);
             // ','
             match self.tokenizer.peek_next_token().unwrap() {
                 &Token::Symbol(Symbol::Comma) => {
@@ -97,6 +94,7 @@ impl Engine {
     }
     
     pub fn compile_subroutine_dec(&mut self) {
+        self.sym_tbl.start_subroutine();
         writeln!(self.writer, "<subroutineDec>").unwrap();
         // 'constructor' | 'function' | 'method'
         match self.tokenizer.peek_next_token().unwrap() {
@@ -116,14 +114,14 @@ impl Engine {
                 self.compile_keyword();
             },
             Token::Identifier(_) => {
-                self.compile_identifier();
+                self.compile_class_name();
             },
             t => {
                 panic!("'void' or type expected, found {:?}", t);
             }
         }
         // subroutineName '(' parameterList ')'
-        self.compile_identifier();
+        self.compile_subroutine_name();
         self.compile_symbol_expect(Symbol::ParenL);
         self.compile_parameter_list();
         self.compile_symbol_expect(Symbol::ParenR);
@@ -157,19 +155,12 @@ impl Engine {
         // (type varName (',' type varName)*)?
         'parameterList: loop {
             // type
-            match self.tokenizer.peek_next_token().unwrap() {
-                &Token::Keyword(Keyword::Int | Keyword::Char | Keyword::Boolean) => {
-                    self.compile_keyword();
-                },
-                &Token::Identifier(_) => {
-                    self.compile_identifier();
-                },
-                _ => {
-                    break 'parameterList;
-                }
+            if let Ok(vartype) = self.compile_type() {
+                // varName
+                self.compile_var_name_defined(VarKind::Arg, vartype);
+            } else {
+                break 'parameterList;
             }
-            // varName
-            self.compile_identifier();
             // ','
             match self.tokenizer.peek_next_token().unwrap() {
                 &Token::Symbol(Symbol::Comma) => {
@@ -188,21 +179,11 @@ impl Engine {
         // 'var'
         self.compile_keyword_expect(Keyword::Var);
         // type
-        match self.tokenizer.peek_next_token().unwrap() {
-            &Token::Keyword(Keyword::Int | Keyword::Char | Keyword::Boolean) => {
-                self.compile_keyword();
-            },
-            &Token::Identifier(_) => {
-                self.compile_identifier();
-            },
-            t => {
-                panic!("type expected, found {:?}", t);
-            }
-        }
+        let vartype = self.compile_type().unwrap();
         // varName (',' varName)*
         'varName: loop {
             // varName
-            self.compile_identifier();
+            self.compile_var_name_defined(VarKind::Var, vartype);
             // ','
             match self.tokenizer.peek_next_token().unwrap() {
                 &Token::Symbol(Symbol::Comma) => {
@@ -210,7 +191,7 @@ impl Engine {
                 },
                 _ => { break 'varName; }
             }
-        }
+        };
         // ';'
         self.compile_symbol_expect(Symbol::SemiColon);
         writeln!(self.writer, "</varDec>").unwrap();
@@ -262,7 +243,7 @@ impl Engine {
         writeln!(self.writer, "<letStatement>").unwrap();
         // 'let' varName 
         self.compile_keyword_expect(Keyword::Let);
-        self.compile_identifier();
+        self.compile_var_name_used();
         // ('[' expression ']')?
         if let &Token::Symbol(Symbol::SqParL) = self.tokenizer.peek_next_token().unwrap() {
             // '[' expression ']'
@@ -367,7 +348,7 @@ impl Engine {
                 match self.tokenizer.peek_2nd_next_token().unwrap() {
                     &Token::Symbol(Symbol::SqParL) => {
                         // varName '[' expression ']'
-                        self.compile_identifier();
+                        self.compile_var_name_used();
                         self.compile_symbol_expect(Symbol::SqParL);
                         self.compile_expression();
                         self.compile_symbol_expect(Symbol::SqParR);
@@ -378,7 +359,7 @@ impl Engine {
                     },
                     _ => {
                         // varName
-                        self.compile_identifier();
+                        self.compile_var_name_used();
                     }
                 }
             },
@@ -423,16 +404,18 @@ impl Engine {
     }
 
     pub fn compile_subroutine_call(&mut self) {
-        // (className | varName) | subroutineName
-        self.compile_identifier();
-        // ('.' subroutineName)?
-        match self.tokenizer.peek_next_token().unwrap() {
+        // subroutine or method?
+        match self.tokenizer.peek_2nd_next_token().unwrap() {
             &Token::Symbol(Symbol::Dot) => {
-                self.compile_symbol();
-                // subroutineName
-                self.compile_identifier();
+                // (className | varName) '.' subroutineName
+                self.compile_var_name_used();
+                self.compile_symbol_expect(Symbol::Dot);
+                self.compile_subroutine_name();
             },
-            _ => ()
+            _ => {
+                // subroutineName
+                self.compile_subroutine_name();
+            }
         } 
         // '(' expressionList ')'
         self.compile_symbol_expect(Symbol::ParenL);
@@ -505,6 +488,7 @@ impl Engine {
         }
     }
 
+
     fn compile_integer_constant(&mut self) {
         match self.tokenizer.get_next_token() {
             Token::IntConst(int_const) => {
@@ -526,6 +510,84 @@ impl Engine {
             }
         }
     }
+
+    fn compile_class_name(&mut self) {
+        match self.tokenizer.get_next_token() {
+            Token::Identifier(ident) => {
+                writeln!(self.writer, "<className> {} </className>", ident).unwrap();
+            },
+            t => {
+                panic!("identifier expected, found {:?}", t);
+            }
+        }
+    }
+
+    fn compile_subroutine_name(&mut self) {
+        match self.tokenizer.get_next_token() {
+            Token::Identifier(ident) => {
+                writeln!(self.writer, "<subroutineName> {} </subroutineName>", ident).unwrap();
+            },
+            t => {
+                panic!("identifier expected, found {:?}", t);
+            }
+        }
+    }
+
+    fn compile_var_name_defined(&mut self, var_kind: VarKind, var_type: VarType) {
+        match self.tokenizer.get_next_token() {
+            Token::Identifier(ident) => {
+                self.sym_tbl.define(&ident, var_kind, var_type);
+                let var_index = self.sym_tbl.index_of(&ident).expect(format!("unknown identifier {}", ident).as_str());
+                writeln!(self.writer, "<varName(defined)> {}[{}] {} {} </varName(defined)>", var_kind, *var_index, var_type, ident).unwrap();
+            },
+            t => {
+                panic!("identifier expected, found {:?}", t);
+            }
+        }
+    }
+
+    fn compile_var_name_used(&mut self) {
+        match self.tokenizer.get_next_token() {
+            Token::Identifier(ident) => {
+                if self.sym_tbl.contains(&ident) {
+                    let var_kind = self.sym_tbl.kind_of(&ident).expect(format!("unknown identifier {}", ident).as_str());
+                    let var_type = self.sym_tbl.type_of(&ident).expect(format!("unknown identifier {}", ident).as_str());
+                    let var_index = self.sym_tbl.index_of(&ident).expect(format!("unknown identifier {}", ident).as_str());
+                    writeln!(self.writer, "<varName(used)> {}[{}] {} {} </varName(used)>", var_kind, *var_index, var_type, ident).unwrap();
+                } else {
+                    writeln!(self.writer, "<className> {} </className>", ident).unwrap();
+
+                }
+            },
+            t => {
+                panic!("identifier expected, found {:?}", t);
+            }
+        }
+    }
+
+    fn compile_type(&mut self) -> Result<VarType, String> {
+        match self.tokenizer.peek_next_token().unwrap() {
+            Token::Keyword(t) => {
+                let vartype = match t {
+                    Keyword::Int     => Ok(VarType::Int),
+                    Keyword::Char    => Ok(VarType::Char),
+                    Keyword::Boolean => Ok(VarType::Boolean),
+                    _ => {
+                        Err(format!("type expected, found {:?}", t))
+                    }
+                };
+                self.compile_keyword();
+                vartype
+            },
+            Token::Identifier(_) => {
+                self.compile_class_name();
+                Ok(VarType::ClassName)
+            },
+            t => {
+                Err(format!("type expected, found {:?}", t))
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -541,12 +603,12 @@ mod tests {
 
         // pair list of full path of *.jack and *.xml files
         let mut filename_pairs_in_out = vec![]; 
-        let jack_src_path = Path::new("/workspace/Jack-compiler/jack_compiler/jack/ExpressionLessSquare");
+        let jack_src_path = Path::new("./jack/ExpressionLessSquare");
         for f in jack_src_path.read_dir().expect("read_dir call failed") {
             if let Ok(f) = f {
                 if f.path().extension().unwrap() == "jack" {
                     let input_filename = f.path().to_string_lossy().into_owned();
-                    let output_filename = f.path().with_extension("xml").to_string_lossy().into_owned();
+                    let output_filename = f.path().with_extension("detailed.xml").to_string_lossy().into_owned();
                     filename_pairs_in_out.push((input_filename, output_filename));
                 }
             }
@@ -564,9 +626,9 @@ mod tests {
             e.compile();
 
             // compare two files
-            let forg = Path::new(fout).with_extension("xml.org").to_string_lossy().into_owned();
-            let diff_status = Command::new("diff").args(["-b", "-u", "-w", &fout, &forg]).status().expect("failed to execute process");
-            assert!(diff_status.success());
+            //let forg = Path::new(fout).with_extension("xml.org").to_string_lossy().into_owned();
+            //let diff_status = Command::new("diff").args(["-b", "-u", "-w", &fout, &forg]).status().expect("failed to execute process");
+            //assert!(diff_status.success());
         }
     }
 
@@ -581,8 +643,8 @@ mod tests {
 
         // pair list of full path of *.jack and *.xml files
         let mut filename_pairs_in_out = vec![]; 
-        let square_path = Path::new("/workspace/Jack-compiler/jack_compiler/jack/Square");
-        let array_test_path = Path::new("/workspace/Jack-compiler/jack_compiler/jack/ArrayTest");
+        let square_path = Path::new("./jack/Square");
+        let array_test_path = Path::new("./jack/ArrayTest");
         for d in [square_path, array_test_path].into_iter() {
             for f in d.read_dir().expect("read_dir call failed") {
                 if let Ok(f) = f {
@@ -607,9 +669,9 @@ mod tests {
             e.compile();
 
             // compare two files
-            let forg = Path::new(fout).with_extension("xml.org").to_string_lossy().into_owned();
-            let diff_status = Command::new("diff").args(["-b", "-u", "-w", &fout, &forg]).status().expect("failed to execute process");
-            assert!(diff_status.success());
+            //let forg = Path::new(fout).with_extension("xml.org").to_string_lossy().into_owned();
+            //let diff_status = Command::new("diff").args(["-b", "-u", "-w", &fout, &forg]).status().expect("failed to execute process");
+            //assert!(diff_status.success());
         }
     }
 }

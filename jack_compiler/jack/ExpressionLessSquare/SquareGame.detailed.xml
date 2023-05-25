@@ -31,30 +31,7 @@
 <symbol> = </symbol>
 <expression>
 <term>
-<className> Square </className>
-<symbol> . </symbol>
-<subroutineName> new </subroutineName>
-<symbol> ( </symbol>
-<expressionList>
-<expression>
-<term>
-<integerConstant> 0 </integerConstant>
-</term>
-</expression>
-<symbol> , </symbol>
-<expression>
-<term>
-<integerConstant> 0 </integerConstant>
-</term>
-</expression>
-<symbol> , </symbol>
-<expression>
-<term>
-<integerConstant> 30 </integerConstant>
-</term>
-</expression>
-</expressionList>
-<symbol> ) </symbol>
+<varName(used)> field[0] class square </varName(used)>
 </term>
 </expression>
 <symbol> ; </symbol>
@@ -65,7 +42,7 @@
 <symbol> = </symbol>
 <expression>
 <term>
-<integerConstant> 0 </integerConstant>
+<varName(used)> field[1] int direction </varName(used)>
 </term>
 </expression>
 <symbol> ; </symbol>
@@ -74,7 +51,7 @@
 <keyword> return </keyword>
 <expression>
 <term>
-<keyword> this </keyword>
+<varName(used)> field[0] class square </varName(used)>
 </term>
 </expression>
 <symbol> ; </symbol>
@@ -114,7 +91,7 @@
 <expressionList>
 <expression>
 <term>
-<keyword> this </keyword>
+<varName(used)> field[0] class square </varName(used)>
 </term>
 </expression>
 </expressionList>
@@ -147,10 +124,6 @@
 <term>
 <varName(used)> field[1] int direction </varName(used)>
 </term>
-<symbol> = </symbol>
-<term>
-<integerConstant> 1 </integerConstant>
-</term>
 </expression>
 <symbol> ) </symbol>
 <symbol> { </symbol>
@@ -175,10 +148,6 @@
 <expression>
 <term>
 <varName(used)> field[1] int direction </varName(used)>
-</term>
-<symbol> = </symbol>
-<term>
-<integerConstant> 2 </integerConstant>
 </term>
 </expression>
 <symbol> ) </symbol>
@@ -205,10 +174,6 @@
 <term>
 <varName(used)> field[1] int direction </varName(used)>
 </term>
-<symbol> = </symbol>
-<term>
-<integerConstant> 3 </integerConstant>
-</term>
 </expression>
 <symbol> ) </symbol>
 <symbol> { </symbol>
@@ -233,10 +198,6 @@
 <expression>
 <term>
 <varName(used)> field[1] int direction </varName(used)>
-</term>
-<symbol> = </symbol>
-<term>
-<integerConstant> 4 </integerConstant>
 </term>
 </expression>
 <symbol> ) </symbol>
@@ -265,7 +226,7 @@
 <expressionList>
 <expression>
 <term>
-<integerConstant> 5 </integerConstant>
+<varName(used)> field[1] int direction </varName(used)>
 </term>
 </expression>
 </expressionList>
@@ -309,7 +270,7 @@
 <symbol> = </symbol>
 <expression>
 <term>
-<keyword> false </keyword>
+<varName(used)> var[0] char key </varName(used)>
 </term>
 </expression>
 <symbol> ; </symbol>
@@ -319,10 +280,7 @@
 <symbol> ( </symbol>
 <expression>
 <term>
-<symbol> ~ </symbol>
-<term>
 <varName(used)> var[1] bool exit </varName(used)>
-</term>
 </term>
 </expression>
 <symbol> ) </symbol>
@@ -334,10 +292,6 @@
 <expression>
 <term>
 <varName(used)> var[0] char key </varName(used)>
-</term>
-<symbol> = </symbol>
-<term>
-<integerConstant> 0 </integerConstant>
 </term>
 </expression>
 <symbol> ) </symbol>
@@ -349,13 +303,7 @@
 <symbol> = </symbol>
 <expression>
 <term>
-<className> Keyboard </className>
-<symbol> . </symbol>
-<subroutineName> keyPressed </subroutineName>
-<symbol> ( </symbol>
-<expressionList>
-</expressionList>
-<symbol> ) </symbol>
+<varName(used)> var[0] char key </varName(used)>
 </term>
 </expression>
 <symbol> ; </symbol>
@@ -379,10 +327,6 @@
 <term>
 <varName(used)> var[0] char key </varName(used)>
 </term>
-<symbol> = </symbol>
-<term>
-<integerConstant> 81 </integerConstant>
-</term>
 </expression>
 <symbol> ) </symbol>
 <symbol> { </symbol>
@@ -393,7 +337,7 @@
 <symbol> = </symbol>
 <expression>
 <term>
-<keyword> true </keyword>
+<varName(used)> var[1] bool exit </varName(used)>
 </term>
 </expression>
 <symbol> ; </symbol>
@@ -407,10 +351,6 @@
 <expression>
 <term>
 <varName(used)> var[0] char key </varName(used)>
-</term>
-<symbol> = </symbol>
-<term>
-<integerConstant> 90 </integerConstant>
 </term>
 </expression>
 <symbol> ) </symbol>
@@ -437,10 +377,6 @@
 <term>
 <varName(used)> var[0] char key </varName(used)>
 </term>
-<symbol> = </symbol>
-<term>
-<integerConstant> 88 </integerConstant>
-</term>
 </expression>
 <symbol> ) </symbol>
 <symbol> { </symbol>
@@ -466,10 +402,6 @@
 <term>
 <varName(used)> var[0] char key </varName(used)>
 </term>
-<symbol> = </symbol>
-<term>
-<integerConstant> 131 </integerConstant>
-</term>
 </expression>
 <symbol> ) </symbol>
 <symbol> { </symbol>
@@ -480,7 +412,7 @@
 <symbol> = </symbol>
 <expression>
 <term>
-<integerConstant> 1 </integerConstant>
+<varName(used)> var[1] bool exit </varName(used)>
 </term>
 </expression>
 <symbol> ; </symbol>
@@ -495,10 +427,6 @@
 <term>
 <varName(used)> var[0] char key </varName(used)>
 </term>
-<symbol> = </symbol>
-<term>
-<integerConstant> 133 </integerConstant>
-</term>
 </expression>
 <symbol> ) </symbol>
 <symbol> { </symbol>
@@ -509,7 +437,7 @@
 <symbol> = </symbol>
 <expression>
 <term>
-<integerConstant> 2 </integerConstant>
+<varName(used)> var[0] char key </varName(used)>
 </term>
 </expression>
 <symbol> ; </symbol>
@@ -524,10 +452,6 @@
 <term>
 <varName(used)> var[0] char key </varName(used)>
 </term>
-<symbol> = </symbol>
-<term>
-<integerConstant> 130 </integerConstant>
-</term>
 </expression>
 <symbol> ) </symbol>
 <symbol> { </symbol>
@@ -538,7 +462,7 @@
 <symbol> = </symbol>
 <expression>
 <term>
-<integerConstant> 3 </integerConstant>
+<varName(used)> field[0] class square </varName(used)>
 </term>
 </expression>
 <symbol> ; </symbol>
@@ -553,10 +477,6 @@
 <term>
 <varName(used)> var[0] char key </varName(used)>
 </term>
-<symbol> = </symbol>
-<term>
-<integerConstant> 132 </integerConstant>
-</term>
 </expression>
 <symbol> ) </symbol>
 <symbol> { </symbol>
@@ -567,7 +487,7 @@
 <symbol> = </symbol>
 <expression>
 <term>
-<integerConstant> 4 </integerConstant>
+<varName(used)> field[1] int direction </varName(used)>
 </term>
 </expression>
 <symbol> ; </symbol>
@@ -580,20 +500,7 @@
 <symbol> ( </symbol>
 <expression>
 <term>
-<symbol> ~ </symbol>
-<term>
-<symbol> ( </symbol>
-<expression>
-<term>
 <varName(used)> var[0] char key </varName(used)>
-</term>
-<symbol> = </symbol>
-<term>
-<integerConstant> 0 </integerConstant>
-</term>
-</expression>
-<symbol> ) </symbol>
-</term>
 </term>
 </expression>
 <symbol> ) </symbol>
@@ -605,13 +512,7 @@
 <symbol> = </symbol>
 <expression>
 <term>
-<className> Keyboard </className>
-<symbol> . </symbol>
-<subroutineName> keyPressed </subroutineName>
-<symbol> ( </symbol>
-<expressionList>
-</expressionList>
-<symbol> ) </symbol>
+<varName(used)> var[0] char key </varName(used)>
 </term>
 </expression>
 <symbol> ; </symbol>

@@ -1,17 +1,17 @@
 <class>
 <keyword> class </keyword>
-<identifier> Main </identifier>
+<className> Main </className>
 <symbol> { </symbol>
 <classVarDec>
 <keyword> static </keyword>
 <keyword> boolean </keyword>
-<identifier> test </identifier>
+<varName(defined)> static[0] bool test </varName(defined)>
 <symbol> ; </symbol>
 </classVarDec>
 <subroutineDec>
 <keyword> function </keyword>
 <keyword> void </keyword>
-<identifier> main </identifier>
+<subroutineName> main </subroutineName>
 <symbol> ( </symbol>
 <parameterList>
 </parameterList>
@@ -20,20 +20,20 @@
 <symbol> { </symbol>
 <varDec>
 <keyword> var </keyword>
-<identifier> SquareGame </identifier>
-<identifier> game </identifier>
+<className> SquareGame </className>
+<varName(defined)> var[0] class game </varName(defined)>
 <symbol> ; </symbol>
 </varDec>
 <statements>
 <letStatement>
 <keyword> let </keyword>
-<identifier> game </identifier>
+<varName(used)> var[0] class game </varName(used)>
 <symbol> = </symbol>
 <expression>
 <term>
-<identifier> SquareGame </identifier>
+<className> SquareGame </className>
 <symbol> . </symbol>
-<identifier> new </identifier>
+<subroutineName> new </subroutineName>
 <symbol> ( </symbol>
 <expressionList>
 </expressionList>
@@ -44,9 +44,9 @@
 </letStatement>
 <doStatement>
 <keyword> do </keyword>
-<identifier> game </identifier>
+<varName(used)> var[0] class game </varName(used)>
 <symbol> . </symbol>
-<identifier> run </identifier>
+<subroutineName> run </subroutineName>
 <symbol> ( </symbol>
 <expressionList>
 </expressionList>
@@ -55,9 +55,9 @@
 </doStatement>
 <doStatement>
 <keyword> do </keyword>
-<identifier> game </identifier>
+<varName(used)> var[0] class game </varName(used)>
 <symbol> . </symbol>
-<identifier> dispose </identifier>
+<subroutineName> dispose </subroutineName>
 <symbol> ( </symbol>
 <expressionList>
 </expressionList>
@@ -75,7 +75,7 @@
 <subroutineDec>
 <keyword> function </keyword>
 <keyword> void </keyword>
-<identifier> more </identifier>
+<subroutineName> more </subroutineName>
 <symbol> ( </symbol>
 <parameterList>
 </parameterList>
@@ -85,21 +85,21 @@
 <varDec>
 <keyword> var </keyword>
 <keyword> int </keyword>
-<identifier> i </identifier>
+<varName(defined)> var[0] int i </varName(defined)>
 <symbol> , </symbol>
-<identifier> j </identifier>
+<varName(defined)> var[1] int j </varName(defined)>
 <symbol> ; </symbol>
 </varDec>
 <varDec>
 <keyword> var </keyword>
-<identifier> String </identifier>
-<identifier> s </identifier>
+<className> String </className>
+<varName(defined)> var[2] class s </varName(defined)>
 <symbol> ; </symbol>
 </varDec>
 <varDec>
 <keyword> var </keyword>
-<identifier> Array </identifier>
-<identifier> a </identifier>
+<className> Array </className>
+<varName(defined)> var[3] class a </varName(defined)>
 <symbol> ; </symbol>
 </varDec>
 <statements>
@@ -116,7 +116,7 @@
 <statements>
 <letStatement>
 <keyword> let </keyword>
-<identifier> s </identifier>
+<varName(used)> var[2] class s </varName(used)>
 <symbol> = </symbol>
 <expression>
 <term>
@@ -127,7 +127,7 @@
 </letStatement>
 <letStatement>
 <keyword> let </keyword>
-<identifier> s </identifier>
+<varName(used)> var[2] class s </varName(used)>
 <symbol> = </symbol>
 <expression>
 <term>
@@ -138,7 +138,7 @@
 </letStatement>
 <letStatement>
 <keyword> let </keyword>
-<identifier> a </identifier>
+<varName(used)> var[3] class a </varName(used)>
 <symbol> [ </symbol>
 <expression>
 <term>
@@ -149,7 +149,7 @@
 <symbol> = </symbol>
 <expression>
 <term>
-<identifier> a </identifier>
+<varName(used)> var[3] class a </varName(used)>
 <symbol> [ </symbol>
 <expression>
 <term>
@@ -168,11 +168,11 @@
 <statements>
 <letStatement>
 <keyword> let </keyword>
-<identifier> i </identifier>
+<varName(used)> var[0] int i </varName(used)>
 <symbol> = </symbol>
 <expression>
 <term>
-<identifier> i </identifier>
+<varName(used)> var[0] int i </varName(used)>
 </term>
 <symbol> * </symbol>
 <term>
@@ -181,7 +181,7 @@
 <term>
 <symbol> - </symbol>
 <term>
-<identifier> j </identifier>
+<varName(used)> var[1] int j </varName(used)>
 </term>
 </term>
 </expression>
@@ -192,11 +192,11 @@
 </letStatement>
 <letStatement>
 <keyword> let </keyword>
-<identifier> j </identifier>
+<varName(used)> var[1] int j </varName(used)>
 <symbol> = </symbol>
 <expression>
 <term>
-<identifier> j </identifier>
+<varName(used)> var[1] int j </varName(used)>
 </term>
 <symbol> / </symbol>
 <term>
@@ -216,15 +216,15 @@
 </letStatement>
 <letStatement>
 <keyword> let </keyword>
-<identifier> i </identifier>
+<varName(used)> var[0] int i </varName(used)>
 <symbol> = </symbol>
 <expression>
 <term>
-<identifier> i </identifier>
+<varName(used)> var[0] int i </varName(used)>
 </term>
 <symbol> | </symbol>
 <term>
-<identifier> j </identifier>
+<varName(used)> var[1] int j </varName(used)>
 </term>
 </expression>
 <symbol> ; </symbol>

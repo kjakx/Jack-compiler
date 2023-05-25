@@ -1,11 +1,11 @@
 <class>
 <keyword> class </keyword>
-<identifier> Main </identifier>
+<className> Main </className>
 <symbol> { </symbol>
 <subroutineDec>
 <keyword> function </keyword>
 <keyword> void </keyword>
-<identifier> main </identifier>
+<subroutineName> main </subroutineName>
 <symbol> ( </symbol>
 <parameterList>
 </parameterList>
@@ -14,34 +14,34 @@
 <symbol> { </symbol>
 <varDec>
 <keyword> var </keyword>
-<identifier> Array </identifier>
-<identifier> a </identifier>
+<className> Array </className>
+<varName(defined)> var[0] class a </varName(defined)>
 <symbol> ; </symbol>
 </varDec>
 <varDec>
 <keyword> var </keyword>
 <keyword> int </keyword>
-<identifier> length </identifier>
+<varName(defined)> var[1] int length </varName(defined)>
 <symbol> ; </symbol>
 </varDec>
 <varDec>
 <keyword> var </keyword>
 <keyword> int </keyword>
-<identifier> i </identifier>
+<varName(defined)> var[2] int i </varName(defined)>
 <symbol> , </symbol>
-<identifier> sum </identifier>
+<varName(defined)> var[3] int sum </varName(defined)>
 <symbol> ; </symbol>
 </varDec>
 <statements>
 <letStatement>
 <keyword> let </keyword>
-<identifier> length </identifier>
+<varName(used)> var[1] int length </varName(used)>
 <symbol> = </symbol>
 <expression>
 <term>
-<identifier> Keyboard </identifier>
+<className> Keyboard </className>
 <symbol> . </symbol>
-<identifier> readInt </identifier>
+<subroutineName> readInt </subroutineName>
 <symbol> ( </symbol>
 <expressionList>
 <expression>
@@ -57,18 +57,18 @@
 </letStatement>
 <letStatement>
 <keyword> let </keyword>
-<identifier> a </identifier>
+<varName(used)> var[0] class a </varName(used)>
 <symbol> = </symbol>
 <expression>
 <term>
-<identifier> Array </identifier>
+<className> Array </className>
 <symbol> . </symbol>
-<identifier> new </identifier>
+<subroutineName> new </subroutineName>
 <symbol> ( </symbol>
 <expressionList>
 <expression>
 <term>
-<identifier> length </identifier>
+<varName(used)> var[1] int length </varName(used)>
 </term>
 </expression>
 </expressionList>
@@ -79,7 +79,7 @@
 </letStatement>
 <letStatement>
 <keyword> let </keyword>
-<identifier> i </identifier>
+<varName(used)> var[2] int i </varName(used)>
 <symbol> = </symbol>
 <expression>
 <term>
@@ -93,11 +93,11 @@
 <symbol> ( </symbol>
 <expression>
 <term>
-<identifier> i </identifier>
+<varName(used)> var[2] int i </varName(used)>
 </term>
 <symbol> &lt; </symbol>
 <term>
-<identifier> length </identifier>
+<varName(used)> var[1] int length </varName(used)>
 </term>
 </expression>
 <symbol> ) </symbol>
@@ -105,20 +105,20 @@
 <statements>
 <letStatement>
 <keyword> let </keyword>
-<identifier> a </identifier>
+<varName(used)> var[0] class a </varName(used)>
 <symbol> [ </symbol>
 <expression>
 <term>
-<identifier> i </identifier>
+<varName(used)> var[2] int i </varName(used)>
 </term>
 </expression>
 <symbol> ] </symbol>
 <symbol> = </symbol>
 <expression>
 <term>
-<identifier> Keyboard </identifier>
+<className> Keyboard </className>
 <symbol> . </symbol>
-<identifier> readInt </identifier>
+<subroutineName> readInt </subroutineName>
 <symbol> ( </symbol>
 <expressionList>
 <expression>
@@ -134,11 +134,11 @@
 </letStatement>
 <letStatement>
 <keyword> let </keyword>
-<identifier> i </identifier>
+<varName(used)> var[2] int i </varName(used)>
 <symbol> = </symbol>
 <expression>
 <term>
-<identifier> i </identifier>
+<varName(used)> var[2] int i </varName(used)>
 </term>
 <symbol> + </symbol>
 <term>
@@ -152,7 +152,7 @@
 </whileStatement>
 <letStatement>
 <keyword> let </keyword>
-<identifier> i </identifier>
+<varName(used)> var[2] int i </varName(used)>
 <symbol> = </symbol>
 <expression>
 <term>
@@ -163,7 +163,7 @@
 </letStatement>
 <letStatement>
 <keyword> let </keyword>
-<identifier> sum </identifier>
+<varName(used)> var[3] int sum </varName(used)>
 <symbol> = </symbol>
 <expression>
 <term>
@@ -177,11 +177,11 @@
 <symbol> ( </symbol>
 <expression>
 <term>
-<identifier> i </identifier>
+<varName(used)> var[2] int i </varName(used)>
 </term>
 <symbol> &lt; </symbol>
 <term>
-<identifier> length </identifier>
+<varName(used)> var[1] int length </varName(used)>
 </term>
 </expression>
 <symbol> ) </symbol>
@@ -189,19 +189,19 @@
 <statements>
 <letStatement>
 <keyword> let </keyword>
-<identifier> sum </identifier>
+<varName(used)> var[3] int sum </varName(used)>
 <symbol> = </symbol>
 <expression>
 <term>
-<identifier> sum </identifier>
+<varName(used)> var[3] int sum </varName(used)>
 </term>
 <symbol> + </symbol>
 <term>
-<identifier> a </identifier>
+<varName(used)> var[0] class a </varName(used)>
 <symbol> [ </symbol>
 <expression>
 <term>
-<identifier> i </identifier>
+<varName(used)> var[2] int i </varName(used)>
 </term>
 </expression>
 <symbol> ] </symbol>
@@ -211,11 +211,11 @@
 </letStatement>
 <letStatement>
 <keyword> let </keyword>
-<identifier> i </identifier>
+<varName(used)> var[2] int i </varName(used)>
 <symbol> = </symbol>
 <expression>
 <term>
-<identifier> i </identifier>
+<varName(used)> var[2] int i </varName(used)>
 </term>
 <symbol> + </symbol>
 <term>
@@ -229,9 +229,9 @@
 </whileStatement>
 <doStatement>
 <keyword> do </keyword>
-<identifier> Output </identifier>
+<className> Output </className>
 <symbol> . </symbol>
-<identifier> printString </identifier>
+<subroutineName> printString </subroutineName>
 <symbol> ( </symbol>
 <expressionList>
 <expression>
@@ -245,18 +245,18 @@
 </doStatement>
 <doStatement>
 <keyword> do </keyword>
-<identifier> Output </identifier>
+<className> Output </className>
 <symbol> . </symbol>
-<identifier> printInt </identifier>
+<subroutineName> printInt </subroutineName>
 <symbol> ( </symbol>
 <expressionList>
 <expression>
 <term>
-<identifier> sum </identifier>
+<varName(used)> var[3] int sum </varName(used)>
 </term>
 <symbol> / </symbol>
 <term>
-<identifier> length </identifier>
+<varName(used)> var[1] int length </varName(used)>
 </term>
 </expression>
 </expressionList>
@@ -265,9 +265,9 @@
 </doStatement>
 <doStatement>
 <keyword> do </keyword>
-<identifier> Output </identifier>
+<className> Output </className>
 <symbol> . </symbol>
-<identifier> println </identifier>
+<subroutineName> println </subroutineName>
 <symbol> ( </symbol>
 <expressionList>
 </expressionList>

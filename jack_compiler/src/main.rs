@@ -3,6 +3,7 @@ mod engine;
 mod keyword;
 mod symbol;
 mod analyzer;
+mod symbol_table;
 
 use std::env;
 use std::path::Path;
