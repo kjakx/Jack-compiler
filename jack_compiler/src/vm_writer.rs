@@ -17,7 +17,7 @@ impl fmt::Display for Segment {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             Segment::Const => {
-                write!(f, "const")
+                write!(f, "constant")
             },
             Segment::Arg => {
                 write!(f, "argument")
