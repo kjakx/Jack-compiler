@@ -14,7 +14,7 @@ impl Compiler {
                         let fin = File::open(f.path()).expect("cannot create source file");
                         let fout = File::create(f.path().with_extension("vm")).expect("cannot create output file");
                         let t = Tokenizer::new(fin);
-                        let mut e = Engine::new(t, fout);
+                        let mut e = Engine::new(t, fout, f.path().file_stem().unwrap().to_str().unwrap().to_string());
                         e.compile();
                     }
                 }
@@ -23,7 +23,7 @@ impl Compiler {
             let fin = File::open(source).expect("cannot create source file");
             let fout = File::create(source.with_extension("vm")).expect("cannot create output file");
             let t = Tokenizer::new(fin);
-            let mut e = Engine::new(t, fout);
+            let mut e = Engine::new(t, fout, source.file_stem().unwrap().to_str().unwrap().to_string());
             e.compile();
         }
     }

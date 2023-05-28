@@ -11,15 +11,17 @@ pub struct Engine {
     sym_tbl: SymbolTable,
     //writer: BufWriter<File>,
     vm_writer: VMWriter,
+    class_name: String,
 }
 
 impl Engine {
-    pub fn new(t: Tokenizer, f: File) -> Self {
+    pub fn new(t: Tokenizer, f: File, cn: String) -> Self {
         Engine {
             tokenizer: t,
             sym_tbl: SymbolTable::new(),
             //writer: BufWriter::<File>::new(f),
             vm_writer: VMWriter::new(f),
+            class_name: cn,
         }
     }
     
@@ -118,7 +120,7 @@ impl Engine {
             }
         }
         // subroutineName '(' parameterList ')'
-        let fname = String::from("Main.") + &self.compile_subroutine_name();
+        let fname = self.class_name.clone() + "." + &self.compile_subroutine_name();
         self.compile_symbol_expect(Symbol::ParenL);
         let count = self.compile_parameter_list();
         self.compile_symbol_expect(Symbol::ParenR);
