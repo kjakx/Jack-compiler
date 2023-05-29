@@ -1,12 +1,12 @@
 use std::collections::HashMap;
 use std::fmt;
 
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum VarType {
     Int,
     Char,
     Boolean,
-    ClassName,
+    ClassName(String),
 }
 
 impl fmt::Display for VarType {
@@ -15,7 +15,7 @@ impl fmt::Display for VarType {
             VarType::Int       => write!(f, "int"),
             VarType::Char      => write!(f, "char"), 
             VarType::Boolean   => write!(f, "bool"),
-            VarType::ClassName => write!(f, "class")
+            VarType::ClassName(class_name) => write!(f, "{}", &class_name)
         }
     }
 }
@@ -241,7 +241,7 @@ mod tests {
         test.define("test2", VarKind::Arg, VarType::Int);
         test.define("test3", VarKind::Static, VarType::Char);
         test.define("test4", VarKind::Field, VarType::Int);
-        test.define("test5", VarKind::Static, VarType::ClassName);
+        test.define("test5", VarKind::Static, VarType::ClassName(String::from("TestClass")));
         assert_eq!(test.kind_of("test1"), Some(&VarKind::Var));
         assert_eq!(test.type_of("test2"), Some(&VarType::Int));
         assert_eq!(test.index_of("test5"), Some(&1));
@@ -256,7 +256,7 @@ mod tests {
         test.define("test2", VarKind::Arg, VarType::Int);
         test.define("test3", VarKind::Static, VarType::Char);
         test.define("test4", VarKind::Field, VarType::Int);
-        test.define("test5", VarKind::Static, VarType::ClassName);
+        test.define("test5", VarKind::Static, VarType::ClassName(String::from("TestClass")));
         test.start_subroutine();
         assert_eq!(test.kind_of("test1"), None);
         assert_eq!(test.type_of("test2"), None);

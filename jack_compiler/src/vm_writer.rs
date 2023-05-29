@@ -2,6 +2,7 @@ use std::io::{BufWriter, Write};
 use std::fs::File;
 use std::fmt;
 
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum Segment {
     Const,
     Arg,
