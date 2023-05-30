@@ -444,13 +444,6 @@ impl Engine {
                         // varName '[' expression ']'
                         let var_name = self.compile_var_name_used();
                         let var_seg = self._seg_of(&var_name);
-                        /*
-                        let var_kind = self.sym_tbl.kind_of(&var_name).unwrap();
-                        if *var_kind == VarKind::Field {
-                            self.vm_writer.write_push(Segment::Arg, 0);
-                            self.vm_writer.write_pop(Segment::Pointer, 0);
-                        }
-                        */
                         let var_index = *self.sym_tbl.index_of(&var_name).unwrap() as i16;
                         self.vm_writer.write_push(var_seg, var_index);
                         self.compile_symbol_expect(Symbol::SqParL);
@@ -468,13 +461,6 @@ impl Engine {
                         // varName
                         let var_name = self.compile_var_name_used();
                         let var_seg = self._seg_of(&var_name);
-                        /*
-                        let var_kind = self.sym_tbl.kind_of(&var_name).unwrap();
-                        if *var_kind == VarKind::Field {
-                            self.vm_writer.write_push(Segment::Arg, 0);
-                            self.vm_writer.write_pop(Segment::Pointer, 0);
-                        }
-                        */
                         let var_index = *self.sym_tbl.index_of(&var_name).unwrap() as i16;
                         self.vm_writer.write_push(var_seg, var_index);
                     }
@@ -549,12 +535,6 @@ impl Engine {
                 is_method = true;
                 let var_name = self.compile_var_name_used();
                 let var_seg = self._seg_of(&var_name);
-                /*
-                if var_seg == Segment::This {
-                    self.vm_writer.write_push(Segment::Arg, 0);
-                    self.vm_writer.write_pop(Segment::Pointer, 0);
-                }
-                */
                 let var_index = *self.sym_tbl.index_of(&var_name).unwrap() as i16;
                 self.vm_writer.write_push(var_seg, var_index);
                 let cn = match self.sym_tbl.type_of(&var_name).unwrap() {
@@ -566,7 +546,6 @@ impl Engine {
                 self.compile_class_name()
             };
             self.compile_symbol_expect(Symbol::Dot);
-            //let fun_name = self.compile_subroutine_name();
             cls_name
         } else { // method call within its belonging class
             is_method = true;
