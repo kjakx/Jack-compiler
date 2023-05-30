@@ -100,44 +100,40 @@ impl Engine {
     pub fn compile_subroutine_dec(&mut self) {
         self.sym_tbl.start_subroutine();
         // 'constructor' | 'function' | 'method'
-        match self.tokenizer.peek_next_token().unwrap() {
+        let subroutine_type = match self.tokenizer.peek_next_token().unwrap() {
             Token::Keyword(Keyword::Constructor | Keyword::Function | Keyword::Method) => {
-                self.compile_keyword();
+                self.compile_keyword()
             },
             t => {
                 panic!("'constructor', 'function' or 'method' expected, found {:?}", t);
             }
-        }
+        };
         // 'void' | type
         match self.tokenizer.peek_next_token().unwrap() {
             Token::Keyword(Keyword::Void) => {
                 self.compile_keyword();
-                true
             },
             Token::Keyword(Keyword::Int | Keyword::Char | Keyword::Boolean) => {
                 self.compile_keyword();
-                false
             },
             Token::Identifier(_) => {
                 self.compile_class_name();
-                false
             },
             t => {
                 panic!("'void' or type expected, found {:?}", t);
             }
-        };
+        }
         // subroutineName '(' parameterList ')'
         let fname = self.class_name.clone() + "." + &self.compile_subroutine_name();
         self.compile_symbol_expect(Symbol::ParenL);
         let count = self.compile_parameter_list();
         self.compile_symbol_expect(Symbol::ParenR);
-        //self.vm_writer.write_function(&fname, count);
         // subroutineBody
-        self.compile_subroutine_body(&fname);
+        self.compile_subroutine_body(&fname, subroutine_type);
         //writeln!(self.writer, "</subroutineDec>").unwrap();
     }
 
-    pub fn compile_subroutine_body(&mut self, fun_name: &str) {
+    pub fn compile_subroutine_body(&mut self, fun_name: &str, subroutine_type: Keyword) {
         // '{'
         self.compile_symbol_expect(Symbol::BraceL);
         // varDec*
@@ -150,6 +146,12 @@ impl Engine {
             }
         }
         self.vm_writer.write_function(fun_name, self.sym_tbl.var_count(VarKind::Var) as i16);
+        if subroutine_type == Keyword::Constructor {
+            let size = self.sym_tbl.var_count(VarKind::Field) + 1;
+            self.vm_writer.write_push(Segment::Const, size as i16);
+            self.vm_writer.write_call("Memory.alloc", 1);
+            self.vm_writer.write_pop(Segment::Pointer, 0);
+        }
         // statements
         self.compile_statements();
         // '}'
@@ -246,6 +248,12 @@ impl Engine {
         self.compile_keyword_expect(Keyword::Let);
         let var_name = self.compile_var_name_used();
         let mut var_seg = self._seg_of(&var_name);
+        /*
+        if var_seg == Segment::This {
+            self.vm_writer.write_push(Segment::Pointer, 0);
+            self.vm_writer.write_pop(Segment::This, 0);
+        }
+        */
         let mut var_index = *self.sym_tbl.index_of(&var_name).unwrap() as i16;
         // ('[' expression ']')?
         if let &Token::Symbol(Symbol::SqParL) = self.tokenizer.peek_next_token().unwrap() {
@@ -398,7 +406,13 @@ impl Engine {
             },
             &Token::StringConst(_) => {
                 let s = self.compile_string_constant();
-                //self.vm_writer.write_push(Segment::Const, s);
+                let length = s.len() as i16;
+                self.vm_writer.write_push(Segment::Const, length);
+                self.vm_writer.write_call("String.new", 1);
+                for i in 0..s.len() {
+                    self.vm_writer.write_push(Segment::Const, s.chars().nth(i).unwrap() as i16);
+                    self.vm_writer.write_call("String.appendChar", 1);
+                }
             },
             &Token::Keyword(Keyword::True | Keyword::False | Keyword::Null | Keyword::This) => {
                 let kw = self.compile_keyword();
@@ -411,9 +425,9 @@ impl Engine {
                         self.vm_writer.write_push(Segment::Const, 0);
                     },
                     Keyword::This => {
-                        unimplemented!()
+                        self.vm_writer.write_push(Segment::Pointer, 0);
                     },
-                    _ => { unimplemented!() }
+                    _ => { unreachable!() }
                 }
             },
             &Token::Identifier(_) => {
@@ -422,6 +436,12 @@ impl Engine {
                         // varName '[' expression ']'
                         let var_name = self.compile_var_name_used();
                         let var_seg = self._seg_of(&var_name);
+                        /*
+                        if var_seg == Segment::This {
+                            self.vm_writer.write_push(Segment::Pointer, 0);
+                            self.vm_writer.write_pop(Segment::This, 0);
+                        }
+                        */
                         let var_index = *self.sym_tbl.index_of(&var_name).unwrap() as i16;
                         self.vm_writer.write_push(var_seg, var_index);
                         self.compile_symbol_expect(Symbol::SqParL);
@@ -439,6 +459,12 @@ impl Engine {
                         // varName
                         let var_name = self.compile_var_name_used();
                         let var_seg = self._seg_of(&var_name);
+                        /*
+                        if var_seg == Segment::This {
+                            self.vm_writer.write_push(Segment::Pointer, 0);
+                            self.vm_writer.write_pop(Segment::This, 0);
+                        }
+                        */
                         let var_index = *self.sym_tbl.index_of(&var_name).unwrap() as i16;
                         self.vm_writer.write_push(var_seg, var_index);
                     }
@@ -495,20 +521,31 @@ impl Engine {
     }
 
     pub fn compile_subroutine_call(&mut self) {
+        let mut is_method = false;
         // function or method?
         let fname = match self.tokenizer.peek_2nd_next_token().unwrap() {
             &Token::Symbol(Symbol::Dot) => {
                 // (className | varName) '.' subroutineName
                 let cls_name = match self.tokenizer.peek_next_token().unwrap() {
                     Token::Identifier(i) => {
-                        if self.sym_tbl.contains(&i) {
-                            let name = self.compile_var_name_used();
-                            if let Some(VarType::ClassName(s)) = self.sym_tbl.type_of(&name) {
+                        if self.sym_tbl.contains(&i) { // method
+                            is_method = true;
+                            let var_name = self.compile_var_name_used();
+                            let var_seg = self._seg_of(&var_name);
+                            /*
+                            if var_seg == Segment::This {
+                                self.vm_writer.write_push(Segment::Pointer, 0);
+                                self.vm_writer.write_pop(Segment::This, 0);
+                            }
+                            */
+                            let var_index = *self.sym_tbl.index_of(&var_name).unwrap() as i16;
+                            self.vm_writer.write_push(var_seg, var_index);
+                            if let Some(VarType::ClassName(s)) = self.sym_tbl.type_of(&var_name) {
                                 s.clone()
                             } else {
                                 unreachable!();
                             }
-                        } else {
+                        } else { // function or constructor
                             self.compile_class_name()
                         }
                     },
@@ -525,9 +562,11 @@ impl Engine {
         };
         // '(' expressionList ')'
         self.compile_symbol_expect(Symbol::ParenL);
-        let num_exp = self.compile_expression_list();
+        let mut num_exp = self.compile_expression_list();
         self.compile_symbol_expect(Symbol::ParenR);
-
+        if is_method {
+            num_exp += 1;
+        }
         self.vm_writer.write_call(&fname, num_exp);
     }
 
@@ -587,10 +626,11 @@ impl Engine {
         }
     }
 
-    fn compile_identifier(&mut self) {
+    fn compile_identifier(&mut self) -> String {
         match self.tokenizer.get_next_token() {
             Token::Identifier(ident) => {
                 //writeln!(self.writer, "<identifier> {} </identifier>", ident).unwrap();
+                ident
             },
             t => {
                 panic!("identifier expected, found {:?}", t);
@@ -623,27 +663,11 @@ impl Engine {
     }
 
     fn compile_class_name(&mut self) -> String {
-        match self.tokenizer.get_next_token() {
-            Token::Identifier(ident) => {
-                //writeln!(self.writer, "<className> {} </className>", ident).unwrap();
-                ident
-            },
-            t => {
-                panic!("identifier expected, found {:?}", t);
-            }
-        }
+        self.compile_identifier()
     }
 
     fn compile_subroutine_name(&mut self) -> String {
-        match self.tokenizer.get_next_token() {
-            Token::Identifier(ident) => {
-                //writeln!(self.writer, "<subroutineName> {} </subroutineName>", ident).unwrap();
-                ident
-            },
-            t => {
-                panic!("identifier expected, found {:?}", t);
-            }
-        }
+        self.compile_identifier()
     }
 
     fn compile_var_name_defined(&mut self, var_kind: VarKind, var_type: VarType) -> String {
