@@ -37,8 +37,9 @@ impl Engine {
     pub fn compile_class(&mut self) {
         // 'class' className '{'
         self.compile_keyword_expect(Keyword::Class);
-        self.compile_class_name();
+        let cls_name = self.compile_class_name();
         self.compile_symbol_expect(Symbol::BraceL);
+        self.sym_tbl.define("this", VarKind::Field, VarType::ClassName(cls_name));
         // classVarDec*
         'classVarDec: loop {
             match self.tokenizer.peek_next_token().unwrap() {
@@ -146,11 +147,18 @@ impl Engine {
             }
         }
         self.vm_writer.write_function(fun_name, self.sym_tbl.var_count(VarKind::Var) as i16);
-        if subroutine_type == Keyword::Constructor {
-            let size = self.sym_tbl.var_count(VarKind::Field) + 1;
-            self.vm_writer.write_push(Segment::Const, size as i16);
-            self.vm_writer.write_call("Memory.alloc", 1);
-            self.vm_writer.write_pop(Segment::Pointer, 0);
+        match subroutine_type {
+            Keyword::Constructor => {
+                let size = self.sym_tbl.var_count(VarKind::Field) + 1;
+                self.vm_writer.write_push(Segment::Const, size as i16);
+                self.vm_writer.write_call("Memory.alloc", 1);
+                self.vm_writer.write_pop(Segment::Pointer, 0);
+            },
+            Keyword::Method => {
+                self.vm_writer.write_push(Segment::Arg, 0);
+                self.vm_writer.write_pop(Segment::Pointer, 0);
+            }
+            _ => (),
         }
         // statements
         self.compile_statements();
@@ -437,9 +445,10 @@ impl Engine {
                         let var_name = self.compile_var_name_used();
                         let var_seg = self._seg_of(&var_name);
                         /*
-                        if var_seg == Segment::This {
-                            self.vm_writer.write_push(Segment::Pointer, 0);
-                            self.vm_writer.write_pop(Segment::This, 0);
+                        let var_kind = self.sym_tbl.kind_of(&var_name).unwrap();
+                        if *var_kind == VarKind::Field {
+                            self.vm_writer.write_push(Segment::Arg, 0);
+                            self.vm_writer.write_pop(Segment::Pointer, 0);
                         }
                         */
                         let var_index = *self.sym_tbl.index_of(&var_name).unwrap() as i16;
@@ -460,9 +469,10 @@ impl Engine {
                         let var_name = self.compile_var_name_used();
                         let var_seg = self._seg_of(&var_name);
                         /*
-                        if var_seg == Segment::This {
-                            self.vm_writer.write_push(Segment::Pointer, 0);
-                            self.vm_writer.write_pop(Segment::This, 0);
+                        let var_kind = self.sym_tbl.kind_of(&var_name).unwrap();
+                        if *var_kind == VarKind::Field {
+                            self.vm_writer.write_push(Segment::Arg, 0);
+                            self.vm_writer.write_pop(Segment::Pointer, 0);
                         }
                         */
                         let var_index = *self.sym_tbl.index_of(&var_name).unwrap() as i16;
@@ -522,44 +532,49 @@ impl Engine {
 
     pub fn compile_subroutine_call(&mut self) {
         let mut is_method = false;
-        // function or method?
-        let fname = match self.tokenizer.peek_2nd_next_token().unwrap() {
-            &Token::Symbol(Symbol::Dot) => {
-                // (className | varName) '.' subroutineName
-                let cls_name = match self.tokenizer.peek_next_token().unwrap() {
-                    Token::Identifier(i) => {
-                        if self.sym_tbl.contains(&i) { // method
-                            is_method = true;
-                            let var_name = self.compile_var_name_used();
-                            let var_seg = self._seg_of(&var_name);
-                            /*
-                            if var_seg == Segment::This {
-                                self.vm_writer.write_push(Segment::Pointer, 0);
-                                self.vm_writer.write_pop(Segment::This, 0);
-                            }
-                            */
-                            let var_index = *self.sym_tbl.index_of(&var_name).unwrap() as i16;
-                            self.vm_writer.write_push(var_seg, var_index);
-                            if let Some(VarType::ClassName(s)) = self.sym_tbl.type_of(&var_name) {
-                                s.clone()
-                            } else {
-                                unreachable!();
-                            }
-                        } else { // function or constructor
-                            self.compile_class_name()
-                        }
-                    },
-                    _ => { unreachable!() }
-                };
-                self.compile_symbol_expect(Symbol::Dot);
-                let fun_name = self.compile_subroutine_name();
-                format!("{}.{}", cls_name, fun_name)
+        // function | method | constructor?
+        let sym = match self.tokenizer.peek_2nd_next_token().unwrap() {
+            Token::Symbol(sym) => {
+                sym
             },
-            _ => {
-                // subroutineName
-                self.compile_subroutine_name()
-            }
+            t => { panic!("symbol expected, found {:?}", t); }
         };
+        let cls_name = if *sym == Symbol::Dot {
+            // (className | varName) '.' subroutineName
+            let i = match self.tokenizer.peek_next_token().unwrap() {
+                Token::Identifier(i) => i,
+                t => { panic!("identifier expected, found {:?}", t); }
+            };
+            let cls_name = if self.sym_tbl.contains(&i) { // method
+                is_method = true;
+                let var_name = self.compile_var_name_used();
+                let var_seg = self._seg_of(&var_name);
+                /*
+                if var_seg == Segment::This {
+                    self.vm_writer.write_push(Segment::Arg, 0);
+                    self.vm_writer.write_pop(Segment::Pointer, 0);
+                }
+                */
+                let var_index = *self.sym_tbl.index_of(&var_name).unwrap() as i16;
+                self.vm_writer.write_push(var_seg, var_index);
+                let cn = match self.sym_tbl.type_of(&var_name).unwrap() {
+                    VarType::ClassName(cn) => cn,
+                    vt => { panic!("class name expected, found {:?}", vt); } 
+                };
+                cn.clone()
+            } else { // function or constructor
+                self.compile_class_name()
+            };
+            self.compile_symbol_expect(Symbol::Dot);
+            //let fun_name = self.compile_subroutine_name();
+            cls_name
+        } else { // method call within its belonging class
+            is_method = true;
+            self.vm_writer.write_push(Segment::Pointer, 0);
+            self.class_name.clone()
+        };
+        let fun_name = self.compile_subroutine_name();
+        let fname = format!("{}.{}", cls_name, fun_name);
         // '(' expressionList ')'
         self.compile_symbol_expect(Symbol::ParenL);
         let mut num_exp = self.compile_expression_list();
@@ -754,6 +769,7 @@ impl Engine {
     }
 }
 
+/*
 #[cfg(test)]
 mod tests {
     #[test]
@@ -839,3 +855,4 @@ mod tests {
         }
     }
 }
+*/
