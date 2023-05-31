@@ -256,12 +256,6 @@ impl Engine {
         self.compile_keyword_expect(Keyword::Let);
         let var_name = self.compile_var_name_used();
         let mut var_seg = self._seg_of(&var_name);
-        /*
-        if var_seg == Segment::This {
-            self.vm_writer.write_push(Segment::Pointer, 0);
-            self.vm_writer.write_pop(Segment::This, 0);
-        }
-        */
         let mut var_index = *self.sym_tbl.index_of(&var_name).unwrap() as i16;
         // ('[' expression ']')?
         if let &Token::Symbol(Symbol::SqParL) = self.tokenizer.peek_next_token().unwrap() {
@@ -419,7 +413,7 @@ impl Engine {
                 self.vm_writer.write_call("String.new", 1);
                 for i in 0..s.len() {
                     self.vm_writer.write_push(Segment::Const, s.chars().nth(i).unwrap() as i16);
-                    self.vm_writer.write_call("String.appendChar", 1);
+                    self.vm_writer.write_call("String.appendChar", 2);
                 }
             },
             &Token::Keyword(Keyword::True | Keyword::False | Keyword::Null | Keyword::This) => {
