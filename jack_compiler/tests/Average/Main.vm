@@ -1,5 +1,5 @@
 function Main.main 4
-push constant 18
+push constant 19
 call String.new 1
 push constant 72
 call String.appendChar 2
@@ -50,11 +50,11 @@ push local 1
 lt
 not
 if-goto WHILE_END0
-push local 0
 push local 2
+push local 0
 add
 pop pointer 1
-push constant 16
+push constant 17
 call String.new 1
 push constant 69
 call String.appendChar 2
@@ -91,8 +91,8 @@ call String.appendChar 2
 call Keyboard.readInt 1
 pop that 0
 push local 3
-push local 0
 push local 2
+push local 0
 add
 pop pointer 1
 push that 0
@@ -104,7 +104,7 @@ add
 pop local 2
 goto WHILE_EXP0
 label WHILE_END0
-push constant 15
+push constant 16
 call String.new 1
 push constant 84
 call String.appendChar 2

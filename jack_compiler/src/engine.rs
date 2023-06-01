@@ -21,7 +21,6 @@ impl Engine {
         Engine {
             tokenizer: t,
             sym_tbl: SymbolTable::new(),
-            //writer: BufWriter::<File>::new(f),
             vm_writer: VMWriter::new(f),
             class_name: cn,
             if_count: 0,
@@ -31,7 +30,6 @@ impl Engine {
     
     pub fn compile(&mut self) {
         self.compile_class();
-        //self.writer.flush().unwrap();
     }
 
     pub fn compile_class(&mut self) {
@@ -39,7 +37,6 @@ impl Engine {
         self.compile_keyword_expect(Keyword::Class);
         let cls_name = self.compile_class_name();
         self.compile_symbol_expect(Symbol::BraceL);
-        //self.sym_tbl.define("this", VarKind::Field, VarType::ClassName(cls_name));
         // classVarDec*
         'classVarDec: loop {
             match self.tokenizer.peek_next_token().unwrap() {
@@ -151,8 +148,8 @@ impl Engine {
         self.vm_writer.write_function(fun_name, self.sym_tbl.var_count(VarKind::Var) as i16);
         match subroutine_type {
             Keyword::Constructor => {
-                let size = self.sym_tbl.var_count(VarKind::Field) + 1;
-                self.vm_writer.write_push(Segment::Const, size as i16);
+                let size = self.sym_tbl.var_count(VarKind::Field) as i16;
+                self.vm_writer.write_push(Segment::Const, size);
                 self.vm_writer.write_call("Memory.alloc", 1);
                 self.vm_writer.write_pop(Segment::Pointer, 0);
             },
@@ -262,10 +259,11 @@ impl Engine {
         // ('[' expression ']')?
         if let &Token::Symbol(Symbol::SqParL) = self.tokenizer.peek_next_token().unwrap() {
             // '[' expression ']'
-            self.vm_writer.write_push(var_seg, var_index);
+            //self.vm_writer.write_push(var_seg, var_index);
             self.compile_symbol_expect(Symbol::SqParL);
             self.compile_expression(); // array index
             self.compile_symbol_expect(Symbol::SqParR);
+            self.vm_writer.write_push(var_seg, var_index);
             self.vm_writer.write_arithmetic(Command::Add);
             self.vm_writer.write_pop(Segment::Pointer, 1);
             var_seg = Segment::That;
@@ -441,10 +439,11 @@ impl Engine {
                         let var_name = self.compile_var_name_used();
                         let var_seg = self._seg_of(&var_name);
                         let var_index = *self.sym_tbl.index_of(&var_name).unwrap() as i16;
-                        self.vm_writer.write_push(var_seg, var_index);
+                        //self.vm_writer.write_push(var_seg, var_index);
                         self.compile_symbol_expect(Symbol::SqParL);
                         self.compile_expression(); // array index
                         self.compile_symbol_expect(Symbol::SqParR);
+                        self.vm_writer.write_push(var_seg, var_index);
                         self.vm_writer.write_arithmetic(Command::Add);
                         self.vm_writer.write_pop(Segment::Pointer, 1);
                         self.vm_writer.write_push(Segment::That, 0);
@@ -579,7 +578,6 @@ impl Engine {
     fn compile_keyword(&mut self) -> Keyword {
         match self.tokenizer.get_next_token() {
             Token::Keyword(kw) => {
-                //writeln!(self.writer, "<keyword> {} </keyword>", kw).unwrap();
                 kw
             },
             t => {
@@ -607,7 +605,6 @@ impl Engine {
     fn compile_symbol(&mut self) -> Symbol {
         match self.tokenizer.get_next_token() {
             Token::Symbol(sym) => {
-                //writeln!(self.writer, "<symbol> {} </symbol>", sym).unwrap();
                 sym
             },
             t => {
@@ -619,7 +616,6 @@ impl Engine {
     fn compile_identifier(&mut self) -> String {
         match self.tokenizer.get_next_token() {
             Token::Identifier(ident) => {
-                //writeln!(self.writer, "<identifier> {} </identifier>", ident).unwrap();
                 ident
             },
             t => {
@@ -631,7 +627,6 @@ impl Engine {
     fn compile_integer_constant(&mut self) -> i16 {
         match self.tokenizer.get_next_token() {
             Token::IntConst(int_const) => {
-                //writeln!(self.writer, "<integerConstant> {} </integerConstant>", int_const).unwrap();
                 int_const
             },
             t => {
@@ -643,7 +638,6 @@ impl Engine {
     fn compile_string_constant(&mut self) -> String {
         match self.tokenizer.get_next_token() {
             Token::StringConst(str_const) => {
-                //writeln!(self.writer, "<stringConstant> {} </stringConstant>", str_const).unwrap();
                 str_const
             },
             t => {
