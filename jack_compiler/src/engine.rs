@@ -39,7 +39,7 @@ impl Engine {
         self.compile_keyword_expect(Keyword::Class);
         let cls_name = self.compile_class_name();
         self.compile_symbol_expect(Symbol::BraceL);
-        self.sym_tbl.define("this", VarKind::Field, VarType::ClassName(cls_name));
+        //self.sym_tbl.define("this", VarKind::Field, VarType::ClassName(cls_name));
         // classVarDec*
         'classVarDec: loop {
             match self.tokenizer.peek_next_token().unwrap() {
@@ -127,11 +127,13 @@ impl Engine {
         // subroutineName '(' parameterList ')'
         let fname = self.class_name.clone() + "." + &self.compile_subroutine_name();
         self.compile_symbol_expect(Symbol::ParenL);
+        if subroutine_type == Keyword::Method {
+            self.sym_tbl.define("this", VarKind::Arg, VarType::ClassName(self.class_name.clone()))
+        }
         let count = self.compile_parameter_list();
         self.compile_symbol_expect(Symbol::ParenR);
         // subroutineBody
         self.compile_subroutine_body(&fname, subroutine_type);
-        //writeln!(self.writer, "</subroutineDec>").unwrap();
     }
 
     pub fn compile_subroutine_body(&mut self, fun_name: &str, subroutine_type: Keyword) {
