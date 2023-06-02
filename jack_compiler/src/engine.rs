@@ -1,4 +1,3 @@
-use std::io::{BufWriter, Write};
 use std::fs::File;
 use crate::tokenizer::*;
 use crate::keyword::*;
@@ -11,8 +10,8 @@ pub struct Engine {
     sym_tbl: SymbolTable,
     vm_writer: VMWriter,
     class_name: String,
-    if_depth: usize,
-    while_depth: usize,
+    if_count: usize,
+    while_count: usize,
 }
 
 impl Engine {
@@ -22,16 +21,17 @@ impl Engine {
             sym_tbl: SymbolTable::new(),
             vm_writer: VMWriter::new(f),
             class_name: cn,
-            if_depth: 0,
-            while_depth: 0,
+            if_count: 0,
+            while_count: 0,
         }
     }
     
     pub fn compile(&mut self) {
         self.compile_class();
+        self.vm_writer.close();
     }
 
-    pub fn compile_class(&mut self) {
+    fn compile_class(&mut self) {
         // 'class' className '{'
         self.compile_keyword_expect(Keyword::Class);
         let cls_name = self.compile_class_name();
@@ -62,7 +62,7 @@ impl Engine {
         self.compile_symbol_expect(Symbol::BraceR);
     }
 
-    pub fn compile_class_var_dec(&mut self) {
+    fn compile_class_var_dec(&mut self) {
         // 'static' | 'field'
         let varkind = match self.tokenizer.peek_next_token().unwrap() {
             &Token::Keyword(Keyword::Static) => {
@@ -94,7 +94,7 @@ impl Engine {
         self.compile_symbol_expect(Symbol::SemiColon);
     }
     
-    pub fn compile_subroutine_dec(&mut self) {
+    fn compile_subroutine_dec(&mut self) {
         self.sym_tbl.start_subroutine();
         // 'constructor' | 'function' | 'method'
         let subroutine_type = match self.tokenizer.peek_next_token().unwrap() {
@@ -132,7 +132,7 @@ impl Engine {
         self.compile_subroutine_body(&fname, subroutine_type);
     }
 
-    pub fn compile_subroutine_body(&mut self, fun_name: &str, subroutine_type: Keyword) {
+    fn compile_subroutine_body(&mut self, fun_name: &str, subroutine_type: Keyword) {
         // '{'
         self.compile_symbol_expect(Symbol::BraceL);
         // varDec*
@@ -164,7 +164,7 @@ impl Engine {
         self.compile_symbol_expect(Symbol::BraceR);
     }
 
-    pub fn compile_parameter_list(&mut self) -> i16 {
+    fn compile_parameter_list(&mut self) -> i16 {
         let mut count = 0;
         // (type varName (',' type varName)*)?
         'parameterList: loop {
@@ -189,7 +189,7 @@ impl Engine {
         count
     }
 
-    pub fn compile_var_dec(&mut self) {
+    fn compile_var_dec(&mut self) {
         // 'var'
         self.compile_keyword_expect(Keyword::Var);
         // type
@@ -210,7 +210,7 @@ impl Engine {
         self.compile_symbol_expect(Symbol::SemiColon);
     }
 
-    pub fn compile_statements(&mut self) {
+    fn compile_statements(&mut self) {
         // statement*
         'statement: loop {
             match self.tokenizer.peek_next_token().unwrap() {
@@ -241,15 +241,15 @@ impl Engine {
         }
     }
 
-    pub fn compile_do(&mut self) {
+    fn compile_do(&mut self) {
         // 'do' subroutineCall ';'
         self.compile_keyword_expect(Keyword::Do);
         self.compile_subroutine_call();
         self.compile_symbol_expect(Symbol::SemiColon);
-        self.vm_writer.write_pop(Segment::Temp, 0);
+        self.vm_writer.write_pop(Segment::Temp, 0); // 値の廃棄にはtemp 0を使用
     }
 
-    pub fn compile_let(&mut self) {
+    fn compile_let(&mut self) {
         // 'let' varName 
         self.compile_keyword_expect(Keyword::Let);
         let var_name = self.compile_var_name_used();
@@ -258,21 +258,21 @@ impl Engine {
         // ('[' expression ']')?
         if let &Token::Symbol(Symbol::SqParL) = self.tokenizer.peek_next_token().unwrap() {
             // '[' expression ']'
-            //self.vm_writer.write_push(var_seg, var_index);
             self.compile_symbol_expect(Symbol::SqParL);
-            self.compile_expression(); // array index
+            self.compile_expression();
             self.compile_symbol_expect(Symbol::SqParR);
+            // 対象要素のアドレスを計算
             self.vm_writer.write_push(var_seg, var_index);
             self.vm_writer.write_arithmetic(Command::Add);
-            //self.vm_writer.write_pop(Segment::Pointer, 1);
-            self.vm_writer.write_pop(Segment::Temp, 0); // 左辺アドレスを退避
+            self.vm_writer.write_pop(Segment::Temp, 1); // temp 1に左辺アドレスを退避
             // '=' expression ';'
             self.compile_symbol_expect(Symbol::Equal);
             self.compile_expression();
             self.compile_symbol_expect(Symbol::SemiColon);
             // アドレス戻し
-            self.vm_writer.write_push(Segment::Temp, 0);
+            self.vm_writer.write_push(Segment::Temp, 1);
             self.vm_writer.write_pop(Segment::Pointer, 1);
+            // 要素に代入
             self.vm_writer.write_pop(Segment::That, 0);
         } else {
             // '=' expression ';'
@@ -283,18 +283,18 @@ impl Engine {
         }
     }
 
-    pub fn compile_while(&mut self) {
+    fn compile_while(&mut self) {
         // 'while' '(' expression ')'
-        let w_cnt = self.while_depth;
-        self.while_depth += 1;
-        self.compile_keyword_expect(Keyword::While);
+        let w_cnt = self.while_count;
         let while_label = format!("WHILE_EXP{}", w_cnt);
+        let while_end_label = format!("WHILE_END{}", w_cnt);
+        self.while_count += 1;
+        self.compile_keyword_expect(Keyword::While);
         self.vm_writer.write_label(&while_label);
         self.compile_symbol_expect(Symbol::ParenL);
-        self.compile_expression();
+        self.compile_expression(); // loop condition
         self.compile_symbol_expect(Symbol::ParenR);
         self.vm_writer.write_arithmetic(Command::Not);
-        let while_end_label = format!("WHILE_END{}", w_cnt);
         self.vm_writer.write_if(&while_end_label);
 
         // '{' statements '}'
@@ -303,10 +303,9 @@ impl Engine {
         self.compile_symbol_expect(Symbol::BraceR);
         self.vm_writer.write_goto(&while_label);
         self.vm_writer.write_label(&while_end_label);
-        self.while_depth -= 1;
     }
 
-    pub fn compile_return(&mut self) {
+    fn compile_return(&mut self) {
         // 'return'
         self.compile_keyword_expect(Keyword::Return);
         // expression?
@@ -323,9 +322,9 @@ impl Engine {
         self.vm_writer.write_return();
     }
 
-    pub fn compile_if(&mut self) {
-        let i_cnt = self.if_depth;
-        self.if_depth += 1;
+    fn compile_if(&mut self) {
+        let i_cnt = self.if_count;
+        self.if_count += 1;
         // 'if' '(' expression ')'
         self.compile_keyword_expect(Keyword::If);
         self.compile_symbol_expect(Symbol::ParenL);
@@ -333,7 +332,6 @@ impl Engine {
         self.compile_symbol_expect(Symbol::ParenR);
         let if_true_label = format!("IF_TRUE{}", i_cnt);
         let if_false_label = format!("IF_FALSE{}", i_cnt);
-        let if_end_label = format!("IF_END{}", i_cnt);
         self.vm_writer.write_if(&if_true_label);
         self.vm_writer.write_goto(&if_false_label);
         // '{' statements '}'
@@ -344,6 +342,7 @@ impl Engine {
         // ('else' '{' statements '}')?
         if let &Token::Keyword(Keyword::Else) = self.tokenizer.peek_next_token().unwrap() {
             // 'else' '{' statements '}'
+            let if_end_label = format!("IF_END{}", i_cnt);
             self.vm_writer.write_goto(&if_end_label);
             self.vm_writer.write_label(&if_false_label);
             self.compile_keyword_expect(Keyword::Else);
@@ -354,10 +353,9 @@ impl Engine {
         } else {
             self.vm_writer.write_label(&if_false_label);
         }
-        self.if_depth -= 1;
     }
 
-    pub fn compile_expression(&mut self) {
+    fn compile_expression(&mut self) {
         // term
         self.compile_term();
         // (op term)*
@@ -399,17 +397,15 @@ impl Engine {
                         }
                         _ => { unreachable!(); }
                     };
-                    //self.compile_term();
                 },
                 _ => {
                     break 'term;
                 }
             }
-            //self.compile_term();
         }
     }
 
-    pub fn compile_term(&mut self) {
+    fn compile_term(&mut self) {
         match self.tokenizer.peek_next_token().unwrap() {
             &Token::IntConst(_) => {
                 let i = self.compile_integer_constant();
@@ -448,10 +444,11 @@ impl Engine {
                         let var_name = self.compile_var_name_used();
                         let var_seg = self._seg_of(&var_name);
                         let var_index = *self.sym_tbl.index_of(&var_name).unwrap() as i16;
-                        //self.vm_writer.write_push(var_seg, var_index);
+                        // '[' expression ']'
                         self.compile_symbol_expect(Symbol::SqParL);
                         self.compile_expression(); // array index
                         self.compile_symbol_expect(Symbol::SqParR);
+                        // アドレス計算、参照先設定
                         self.vm_writer.write_push(var_seg, var_index);
                         self.vm_writer.write_arithmetic(Command::Add);
                         self.vm_writer.write_pop(Segment::Pointer, 1);
@@ -496,7 +493,7 @@ impl Engine {
         }
     }
 
-    pub fn compile_expression_list(&mut self) -> i16 {
+    fn compile_expression_list(&mut self) -> i16 {
         let mut count = 0;
         // (expression (',' expression)* )?
         match self.tokenizer.peek_next_token().unwrap() {
@@ -520,7 +517,7 @@ impl Engine {
         count
     }
 
-    pub fn compile_subroutine_call(&mut self) {
+    fn compile_subroutine_call(&mut self) {
         let mut is_method = false;
         // function | method | constructor?
         let sym = match self.tokenizer.peek_2nd_next_token().unwrap() {
@@ -679,15 +676,10 @@ impl Engine {
         match self.tokenizer.get_next_token() {
             Token::Identifier(ident) => {
                 if self.sym_tbl.contains(&ident) {
-                    let var_kind = self.sym_tbl.kind_of(&ident).expect(format!("unknown identifier {}", ident).as_str());
-                    let var_type = self.sym_tbl.type_of(&ident).expect(format!("unknown identifier {}", ident).as_str());
-                    let var_index = self.sym_tbl.index_of(&ident).expect(format!("unknown identifier {}", ident).as_str());
-                    //writeln!(self.writer, "<varName(used)> {}[{}] {} {} </varName(used)>", var_kind, *var_index, var_type, ident).unwrap();
+                    ident
                 } else {
-                    unreachable!();
-                    //writeln!(self.writer, "<className> {} </className>", ident).unwrap();
+                    panic!("variable {} is not registered", ident);
                 }
-                ident
             },
             t => {
                 panic!("identifier expected, found {:?}", t);
@@ -722,7 +714,6 @@ impl Engine {
     fn _seg_of(&self, var_name: &str) -> Segment {
         match self.sym_tbl.kind_of(&var_name) {
             Some(k) => {
-                //let index = *self.sym_tbl.index_of(&var_name).unwrap()
                 match k {
                     VarKind::Static => {
                         Segment::Static
