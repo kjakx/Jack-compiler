@@ -9,7 +9,6 @@ use crate::vm_writer::*;
 pub struct Engine {
     tokenizer: Tokenizer,
     sym_tbl: SymbolTable,
-    //writer: BufWriter<File>,
     vm_writer: VMWriter,
     class_name: String,
     if_count: usize,
@@ -265,17 +264,23 @@ impl Engine {
             self.compile_symbol_expect(Symbol::SqParR);
             self.vm_writer.write_push(var_seg, var_index);
             self.vm_writer.write_arithmetic(Command::Add);
+            //self.vm_writer.write_pop(Segment::Pointer, 1);
+            self.vm_writer.write_pop(Segment::Temp, 0); // 左辺アドレスを退避
+            // '=' expression ';'
+            self.compile_symbol_expect(Symbol::Equal);
+            self.compile_expression();
+            self.compile_symbol_expect(Symbol::SemiColon);
+            // アドレス戻し
+            self.vm_writer.write_push(Segment::Temp, 0);
             self.vm_writer.write_pop(Segment::Pointer, 1);
-            var_seg = Segment::That;
-            var_index = 0;
+            self.vm_writer.write_pop(Segment::That, 0);
+        } else {
+            // '=' expression ';'
+            self.compile_symbol_expect(Symbol::Equal);
+            self.compile_expression();
+            self.compile_symbol_expect(Symbol::SemiColon);
+            self.vm_writer.write_pop(var_seg, var_index);
         }
-
-        // '=' expression ';'
-        self.compile_symbol_expect(Symbol::Equal);
-        self.compile_expression();
-        self.compile_symbol_expect(Symbol::SemiColon);
-
-        self.vm_writer.write_pop(var_seg, var_index);
     }
 
     pub fn compile_while(&mut self) {
@@ -658,8 +663,6 @@ impl Engine {
         match self.tokenizer.get_next_token() {
             Token::Identifier(ident) => {
                 self.sym_tbl.define(&ident, var_kind, var_type);
-                // let var_index = self.sym_tbl.index_of(&ident).expect(format!("unknown identifier {}", ident).as_str());
-                //writeln!(self.writer, "<varName(defined)> {}[{}] {} {} </varName(defined)>", var_kind, *var_index, var_type, ident).unwrap();
                 ident
             },
             t => {
