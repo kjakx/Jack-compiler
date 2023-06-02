@@ -11,8 +11,8 @@ pub struct Engine {
     sym_tbl: SymbolTable,
     vm_writer: VMWriter,
     class_name: String,
-    if_count: usize,
-    while_count: usize,
+    if_depth: usize,
+    while_depth: usize,
 }
 
 impl Engine {
@@ -22,8 +22,8 @@ impl Engine {
             sym_tbl: SymbolTable::new(),
             vm_writer: VMWriter::new(f),
             class_name: cn,
-            if_count: 0,
-            while_count: 0,
+            if_depth: 0,
+            while_depth: 0,
         }
     }
     
@@ -285,8 +285,8 @@ impl Engine {
 
     pub fn compile_while(&mut self) {
         // 'while' '(' expression ')'
-        let w_cnt = self.while_count;
-        self.while_count += 1;
+        let w_cnt = self.while_depth;
+        self.while_depth += 1;
         self.compile_keyword_expect(Keyword::While);
         let while_label = format!("WHILE_EXP{}", w_cnt);
         self.vm_writer.write_label(&while_label);
@@ -303,6 +303,7 @@ impl Engine {
         self.compile_symbol_expect(Symbol::BraceR);
         self.vm_writer.write_goto(&while_label);
         self.vm_writer.write_label(&while_end_label);
+        self.while_depth -= 1;
     }
 
     pub fn compile_return(&mut self) {
@@ -323,8 +324,8 @@ impl Engine {
     }
 
     pub fn compile_if(&mut self) {
-        let i_cnt = self.if_count;
-        self.if_count += 1;
+        let i_cnt = self.if_depth;
+        self.if_depth += 1;
         // 'if' '(' expression ')'
         self.compile_keyword_expect(Keyword::If);
         self.compile_symbol_expect(Symbol::ParenL);
@@ -340,17 +341,20 @@ impl Engine {
         self.compile_symbol_expect(Symbol::BraceL);
         self.compile_statements();
         self.compile_symbol_expect(Symbol::BraceR);
-        self.vm_writer.write_goto(&if_end_label);
         // ('else' '{' statements '}')?
-        self.vm_writer.write_label(&if_false_label);
         if let &Token::Keyword(Keyword::Else) = self.tokenizer.peek_next_token().unwrap() {
             // 'else' '{' statements '}'
+            self.vm_writer.write_goto(&if_end_label);
+            self.vm_writer.write_label(&if_false_label);
             self.compile_keyword_expect(Keyword::Else);
             self.compile_symbol_expect(Symbol::BraceL);
             self.compile_statements();
             self.compile_symbol_expect(Symbol::BraceR);
+            self.vm_writer.write_label(&if_end_label);
+        } else {
+            self.vm_writer.write_label(&if_false_label);
         }
-        self.vm_writer.write_label(&if_end_label);
+        self.if_depth -= 1;
     }
 
     pub fn compile_expression(&mut self) {

@@ -464,9 +464,7 @@ add
 push temp 0
 pop pointer 1
 pop that 0
-goto IF_END0
 label IF_FALSE0
-label IF_END0
 push constant 44
 call String.new 1
 push constant 84
