@@ -15,12 +15,12 @@ pub struct Engine {
 }
 
 impl Engine {
-    pub fn new(t: Tokenizer, f: File, cn: String) -> Self {
+    pub fn new(t: Tokenizer, f: File) -> Self {
         Engine {
             tokenizer: t,
             sym_tbl: SymbolTable::new(),
             vm_writer: VMWriter::new(f),
-            class_name: cn,
+            class_name: String::new(),
             if_count: 0,
             while_count: 0,
         }
@@ -34,7 +34,7 @@ impl Engine {
     fn compile_class(&mut self) {
         // 'class' className '{'
         self.compile_keyword_expect(Keyword::Class);
-        let cls_name = self.compile_class_name();
+        self.class_name = self.compile_class_name();
         self.compile_symbol_expect(Symbol::BraceL);
         // classVarDec*
         'classVarDec: loop {
@@ -126,7 +126,7 @@ impl Engine {
         if subroutine_type == Keyword::Method {
             self.sym_tbl.define("this", VarKind::Arg, VarType::ClassName(self.class_name.clone()))
         }
-        let count = self.compile_parameter_list();
+        self.compile_parameter_list();
         self.compile_symbol_expect(Symbol::ParenR);
         // subroutineBody
         self.compile_subroutine_body(&fname, subroutine_type);
@@ -164,15 +164,13 @@ impl Engine {
         self.compile_symbol_expect(Symbol::BraceR);
     }
 
-    fn compile_parameter_list(&mut self) -> i16 {
-        let mut count = 0;
+    fn compile_parameter_list(&mut self) {
         // (type varName (',' type varName)*)?
         'parameterList: loop {
             // type
             if let Ok(vartype) = self.compile_type() {
                 // varName
                 self.compile_var_name_defined(VarKind::Arg, vartype);
-                count += 1;
             } else {
                 break 'parameterList;
             }
@@ -186,7 +184,6 @@ impl Engine {
                 }
             }
         }
-        count
     }
 
     fn compile_var_dec(&mut self) {
@@ -253,8 +250,8 @@ impl Engine {
         // 'let' varName 
         self.compile_keyword_expect(Keyword::Let);
         let var_name = self.compile_var_name_used();
-        let mut var_seg = self._seg_of(&var_name);
-        let mut var_index = *self.sym_tbl.index_of(&var_name).unwrap() as i16;
+        let var_seg = self._seg_of(&var_name);
+        let var_index = *self.sym_tbl.index_of(&var_name).unwrap() as i16;
         // ('[' expression ']')?
         if let &Token::Symbol(Symbol::SqParL) = self.tokenizer.peek_next_token().unwrap() {
             // '[' expression ']'
